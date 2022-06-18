@@ -19,6 +19,7 @@ type App struct {
 	Router         *mux.Router
 	DB             *gorm.DB
 	SessionHandler *handlers.SessionHandler
+	SampleHandler  *handlers.SampleHandler
 }
 
 func (a *App) Initialize() {
@@ -30,14 +31,15 @@ func (a *App) Initialize() {
 	a.DB = db
 	a.Router = mux.NewRouter()
 	a.SessionHandler = handlers.NewSessionHandler(db)
+	a.SampleHandler = handlers.NewSampleHandler(db)
 
 	a.Migrate()
 	a.InitializeRoutes()
 }
 
 func (a *App) Migrate() {
-	a.DB.AutoMigrate(&models.Session{})
-	a.DB.AutoMigrate(&models.Sample{})
+	//a.DB.AutoMigrate(&models.Session{})
+	//a.DB.AutoMigrate(&models.Sample{})
 }
 
 func (a *App) InitializeRoutes() {
@@ -51,12 +53,8 @@ func (a *App) InitializeRoutes() {
 
 	a.Router.HandleFunc("/sessions", a.getSessions).Methods("GET")
 	a.Router.HandleFunc("/sessions/{id:[0-9]+}", a.getSession).Methods("GET")
-	//a.Router.Handle("/posts/{id:[0-9]+}", authWrapper(a.updatePost)).Methods("PATCH")
-	//a.Router.Handle("/posts/{id:[0-9]+}", authWrapper(a.deletePost)).Methods("DELETE")
-	//a.Router.HandleFunc("/auth/login", a.login).Methods("POST", "OPTIONS")
-	//a.Router.HandleFunc("/auth/register", a.register).Methods("POST")
-	//a.Router.HandleFunc("/auth/refresh-token", a.refreshToken).Methods("POST")
-	//a.Router.Handle("/user", authWrapper(a.getUser)).Methods("GET", "OPTIONS")
+	a.Router.HandleFunc("/sessions/{id:[0-9]+}/samples", a.getSamples).Methods("GET")
+	a.Router.HandleFunc("/sessions/{id:[0-9]+}/samples/{status:[a-z]+}", a.getSamplesWithStatus).Methods("GET")
 }
 
 func (a *App) getSessions(w http.ResponseWriter, r *http.Request) {
@@ -86,6 +84,64 @@ func (a *App) getSession(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(session)
+}
+
+func (a *App) getSamples(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	sessionIdString := vars["id"]
+	sessionId, err := strconv.Atoi(sessionIdString)
+	if err != nil {
+		fmt.Println("Error converting id")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	samples, samplesErr := a.SampleHandler.GetSamples(uint(sessionId))
+	if samplesErr != nil {
+		fmt.Println(samplesErr)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(samplesErr.Error()))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(samples)
+}
+
+func (a *App) getSamplesWithStatus(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	// parse session id
+	sessionIdString := vars["id"]
+	sessionId, err := strconv.Atoi(sessionIdString)
+	if err != nil {
+		fmt.Println("Error converting session id")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	// parse sample status
+	statusString := vars["status"]
+	status := models.StatusType(statusString)
+	if statusErr := status.IsValid(); statusErr != nil {
+		fmt.Println("Invalid status type")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(statusErr.Error()))
+		return
+	}
+
+	samples, samplesErr := a.SampleHandler.GetSamplesWithStatus(uint(sessionId), status)
+	if samplesErr != nil {
+		fmt.Println(samplesErr)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(samplesErr.Error()))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(samples)
 }
 
 func logRequest(handler http.Handler) http.Handler {

@@ -1,7 +1,7 @@
 package models
 
 import (
-	"database/sql/driver"
+	"errors"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
@@ -16,14 +16,22 @@ const (
 	Assigned  StatusType = "assigned"
 )
 
-func (r *StatusType) Scan(value interface{}) error {
-	*r = StatusType(value.([]byte))
-	return nil
+func (st StatusType) IsValid() error {
+	switch st {
+	case Accepted, Rejected, Uncertain, Unvisited, Assigned:
+		return nil
+	}
+	return errors.New("invalid status type")
 }
 
-func (r StatusType) Value() (driver.Value, error) {
-	return string(r), nil
-}
+//func (r *StatusType) Scan(value interface{}) error {
+//	*r = StatusType(value.([]byte))
+//	return nil
+//}
+//
+//func (r StatusType) Value() (driver.Value, error) {
+//	return string(r), nil
+//}
 
 type Sample struct {
 	gorm.Model
