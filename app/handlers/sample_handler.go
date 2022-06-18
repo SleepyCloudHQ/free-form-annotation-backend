@@ -34,16 +34,25 @@ func (s *SampleHandler) GetSamplesWithStatus(sessionId uint, status models.Statu
 }
 
 func (s *SampleHandler) GetSample(sessionId uint, sampleId uint) (*models.Sample, error) {
-	sample := &models.Sample{
-		Model: gorm.Model{
-			ID: sampleId,
-		},
-		SessionID: sessionId,
-	}
+	sample := &models.Sample{}
 
-	if dbErr := s.DB.First(&sample).Error; dbErr != nil {
+	if dbErr := s.DB.Where("session_id = ?", sessionId).First(&sample, sampleId).Error; dbErr != nil {
 		return nil, dbErr
 	}
 
+	return sample, nil
+}
+
+func (s *SampleHandler) AssignNextSample(sessionId uint) (*models.Sample, error) {
+	sample := &models.Sample{}
+
+	if dbErr := s.DB.Where("status = ? AND session_id = ?", models.Unvisited, sessionId).First(&sample).Error; dbErr != nil {
+		return nil, dbErr
+	}
+
+	// update status
+	if updateErr := s.DB.Model(&sample).Updates(models.Sample{Status: models.Assigned}).Error; updateErr != nil {
+		return nil, updateErr
+	}
 	return sample, nil
 }
