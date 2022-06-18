@@ -55,6 +55,7 @@ func (a *App) InitializeRoutes() {
 	a.Router.HandleFunc("/sessions/{id:[0-9]+}", a.getSession).Methods("GET")
 	a.Router.HandleFunc("/sessions/{id:[0-9]+}/samples", a.getSamples).Methods("GET")
 	a.Router.HandleFunc("/sessions/{id:[0-9]+}/samples/{status:[a-z]+}", a.getSamplesWithStatus).Methods("GET")
+	a.Router.HandleFunc("/sessions/{id:[0-9]+}/samples/{sampleId:[0-9]+}", a.getSample).Methods("GET")
 }
 
 func (a *App) getSessions(w http.ResponseWriter, r *http.Request) {
@@ -107,6 +108,38 @@ func (a *App) getSamples(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(samples)
+}
+
+func (a *App) getSample(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	sessionIdString := vars["id"]
+	sessionId, err := strconv.Atoi(sessionIdString)
+	if err != nil {
+		fmt.Println("Error converting session id")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	sampleIdString := vars["sampleId"]
+	sampleId, err := strconv.Atoi(sampleIdString)
+	if err != nil {
+		fmt.Println("Error converting sample id")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	sample, sampleErr := a.SampleHandler.GetSample(uint(sessionId), uint(sampleId))
+	if sampleErr != nil {
+		fmt.Println(sampleErr)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(sampleErr.Error()))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(sample)
 }
 
 func (a *App) getSamplesWithStatus(w http.ResponseWriter, r *http.Request) {

@@ -33,7 +33,7 @@ func (s *SampleHandler) GetSamplesWithStatus(sessionId uint, status models.Statu
 	return &samples, nil
 }
 
-func (s *SessionHandler) GetSample(sessionId uint, sampleId uint) (*models.Sample, error) {
+func (s *SampleHandler) GetSample(sessionId uint, sampleId uint) (*models.Sample, error) {
 	sample := &models.Sample{
 		Model: gorm.Model{
 			ID: sampleId,
