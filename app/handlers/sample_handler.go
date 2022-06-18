@@ -2,8 +2,14 @@ package handlers
 
 import (
 	"backend/app/models"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
+
+type PatchSampleRequest struct {
+	Status      models.StatusType `json:"status"`
+	Annotations datatypes.JSON    `json:"annotations"`
+}
 
 type SampleHandler struct {
 	DB *gorm.DB
@@ -37,6 +43,16 @@ func (s *SampleHandler) GetSample(sessionId uint, sampleId uint) (*models.Sample
 	sample := &models.Sample{}
 
 	if dbErr := s.DB.Where("session_id = ?", sessionId).First(&sample, sampleId).Error; dbErr != nil {
+		return nil, dbErr
+	}
+
+	return sample, nil
+}
+
+func (s *SampleHandler) PatchSample(sessionId uint, sampleId uint, patchRequest *PatchSampleRequest) (*models.Sample, error) {
+	sample := &models.Sample{}
+	updateData := models.Sample{Annotations: patchRequest.Annotations, Status: patchRequest.Status}
+	if dbErr := s.DB.Where("session_id = ?", sessionId).First(&sample, sampleId).Updates(updateData).Error; dbErr != nil {
 		return nil, dbErr
 	}
 
