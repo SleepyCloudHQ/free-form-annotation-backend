@@ -38,8 +38,8 @@ func main() {
 		},
 	}
 
-	createErr := db.Create(&models.Session{
-		Name:    "Session name",
+	createErr := db.Create(&models.Dataset{
+		Name:    "Dataset name",
 		Type:    models.EntityAnnotation,
 		Samples: samples,
 	}).Error

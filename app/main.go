@@ -18,7 +18,7 @@ import (
 type App struct {
 	Router         *mux.Router
 	DB             *gorm.DB
-	SessionHandler *handlers.SessionHandler
+	DatasetHandler *handlers.DatasetHandler
 	SampleHandler  *handlers.SampleHandler
 }
 
@@ -30,7 +30,7 @@ func (a *App) Initialize() {
 	}
 	a.DB = db
 	a.Router = mux.NewRouter()
-	a.SessionHandler = handlers.NewSessionHandler(db)
+	a.DatasetHandler = handlers.NewDatasetHandler(db)
 	a.SampleHandler = handlers.NewSampleHandler(db)
 
 	a.Migrate()
@@ -38,7 +38,7 @@ func (a *App) Initialize() {
 }
 
 func (a *App) Migrate() {
-	//a.DB.AutoMigrate(&models.Session{})
+	//a.DB.AutoMigrate(&models.Dataset{})
 	//a.DB.AutoMigrate(&models.Sample{})
 }
 
@@ -51,25 +51,25 @@ func (a *App) InitializeRoutes() {
 
 	a.Router.Use(cors, middlewares.JSONResponseMiddleware)
 
-	a.Router.HandleFunc("/sessions", a.getSessions).Methods("GET")
-	a.Router.HandleFunc("/sessions/{id:[0-9]+}", a.getSession).Methods("GET")
-	a.Router.HandleFunc("/sessions/{id:[0-9]+}/samples", a.getSamples).Methods("GET")
-	a.Router.HandleFunc("/sessions/{id:[0-9]+}/samples/next", a.assignNextSample).Methods("GET")
-	a.Router.HandleFunc("/sessions/{id:[0-9]+}/samples/{status:[a-z]+}", a.getSamplesWithStatus).Methods("GET")
-	a.Router.HandleFunc("/sessions/{id:[0-9]+}/samples/{sampleId:[0-9]+}", a.getSample).Methods("GET")
-	a.Router.HandleFunc("/sessions/{id:[0-9]+}/samples/{sampleId:[0-9]+}", a.patchSample).Methods("PATCH")
+	a.Router.HandleFunc("/datasets", a.getDatasets).Methods("GET")
+	a.Router.HandleFunc("/datasets/{id:[0-9]+}", a.getDataset).Methods("GET")
+	a.Router.HandleFunc("/datasets/{id:[0-9]+}/samples", a.getSamples).Methods("GET")
+	a.Router.HandleFunc("/datasets/{id:[0-9]+}/samples/next", a.assignNextSample).Methods("GET")
+	a.Router.HandleFunc("/datasets/{id:[0-9]+}/samples/{status:[a-z]+}", a.getSamplesWithStatus).Methods("GET")
+	a.Router.HandleFunc("/datasets/{id:[0-9]+}/samples/{sampleId:[0-9]+}", a.getSample).Methods("GET")
+	a.Router.HandleFunc("/datasets/{id:[0-9]+}/samples/{sampleId:[0-9]+}", a.patchSample).Methods("PATCH")
 }
 
-func (a *App) getSessions(w http.ResponseWriter, r *http.Request) {
-	sessions := a.SessionHandler.GetSessions()
+func (a *App) getDatasets(w http.ResponseWriter, r *http.Request) {
+	datasets := a.DatasetHandler.GetDatasets()
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(sessions)
+	json.NewEncoder(w).Encode(datasets)
 }
 
-func (a *App) getSession(w http.ResponseWriter, r *http.Request) {
+func (a *App) getDataset(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	sessionIdString := vars["id"]
-	sessionId, err := strconv.Atoi(sessionIdString)
+	datasetIdString := vars["id"]
+	datasetId, err := strconv.Atoi(datasetIdString)
 	if err != nil {
 		fmt.Println("Error converting id")
 		w.WriteHeader(http.StatusBadRequest)
@@ -77,22 +77,22 @@ func (a *App) getSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, sessionErr := a.SessionHandler.GetSession(uint(sessionId))
-	if sessionErr != nil {
-		fmt.Println(sessionErr)
+	dataset, datasetErr := a.DatasetHandler.GetDataset(uint(datasetId))
+	if datasetErr != nil {
+		fmt.Println(datasetErr)
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(sessionErr.Error()))
+		w.Write([]byte(datasetErr.Error()))
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(session)
+	json.NewEncoder(w).Encode(dataset)
 }
 
 func (a *App) getSamples(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	sessionIdString := vars["id"]
-	sessionId, err := strconv.Atoi(sessionIdString)
+	datasetIdString := vars["id"]
+	datasetId, err := strconv.Atoi(datasetIdString)
 	if err != nil {
 		fmt.Println("Error converting id")
 		w.WriteHeader(http.StatusBadRequest)
@@ -100,7 +100,7 @@ func (a *App) getSamples(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	samples, samplesErr := a.SampleHandler.GetSamples(uint(sessionId))
+	samples, samplesErr := a.SampleHandler.GetSamples(uint(datasetId))
 	if samplesErr != nil {
 		fmt.Println(samplesErr)
 		w.WriteHeader(http.StatusBadRequest)
@@ -114,12 +114,12 @@ func (a *App) getSamples(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) getSample(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	sessionIdString := vars["id"]
-	sessionId, sessionErr := strconv.Atoi(sessionIdString)
-	if sessionErr != nil {
-		fmt.Println("Error converting session id")
+	datasetIdString := vars["id"]
+	datasetId, datasetErr := strconv.Atoi(datasetIdString)
+	if datasetErr != nil {
+		fmt.Println("Error converting dataset id")
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(sessionErr.Error()))
+		w.Write([]byte(datasetErr.Error()))
 		return
 	}
 
@@ -132,7 +132,7 @@ func (a *App) getSample(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sample, sampleErr := a.SampleHandler.GetSample(uint(sessionId), uint(sampleId))
+	sample, sampleErr := a.SampleHandler.GetSample(uint(datasetId), uint(sampleId))
 	if sampleErr != nil {
 		fmt.Println(sampleErr)
 		w.WriteHeader(http.StatusBadRequest)
@@ -146,11 +146,11 @@ func (a *App) getSample(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) getSamplesWithStatus(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	// parse session id
-	sessionIdString := vars["id"]
-	sessionId, err := strconv.Atoi(sessionIdString)
+	// parse dataset id
+	datasetIdString := vars["id"]
+	datasetId, err := strconv.Atoi(datasetIdString)
 	if err != nil {
-		fmt.Println("Error converting session id")
+		fmt.Println("Error converting dataset id")
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
 		return
@@ -166,7 +166,7 @@ func (a *App) getSamplesWithStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	samples, samplesErr := a.SampleHandler.GetSamplesWithStatus(uint(sessionId), status)
+	samples, samplesErr := a.SampleHandler.GetSamplesWithStatus(uint(datasetId), status)
 	if samplesErr != nil {
 		fmt.Println(samplesErr)
 		w.WriteHeader(http.StatusBadRequest)
@@ -180,8 +180,8 @@ func (a *App) getSamplesWithStatus(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) assignNextSample(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	sessionIdString := vars["id"]
-	sessionId, err := strconv.Atoi(sessionIdString)
+	datasetIdString := vars["id"]
+	datasetId, err := strconv.Atoi(datasetIdString)
 	if err != nil {
 		fmt.Println("Error converting id")
 		w.WriteHeader(http.StatusBadRequest)
@@ -189,7 +189,7 @@ func (a *App) assignNextSample(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sample, sampleErr := a.SampleHandler.AssignNextSample(uint(sessionId))
+	sample, sampleErr := a.SampleHandler.AssignNextSample(uint(datasetId))
 	if sampleErr != nil {
 		fmt.Println(sampleErr)
 		w.WriteHeader(http.StatusBadRequest)
@@ -203,12 +203,12 @@ func (a *App) assignNextSample(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) patchSample(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	sessionIdString := vars["id"]
-	sessionId, sessionErr := strconv.Atoi(sessionIdString)
-	if sessionErr != nil {
-		fmt.Println("Error converting session id")
+	datasetIdString := vars["id"]
+	datasetId, datasetErr := strconv.Atoi(datasetIdString)
+	if datasetErr != nil {
+		fmt.Println("Error converting dataset id")
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(sessionErr.Error()))
+		w.Write([]byte(datasetErr.Error()))
 		return
 	}
 
@@ -229,7 +229,7 @@ func (a *App) patchSample(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sample, sampleErr := a.SampleHandler.PatchSample(uint(sessionId), uint(sampleId), patchRequest)
+	sample, sampleErr := a.SampleHandler.PatchSample(uint(datasetId), uint(sampleId), patchRequest)
 	if sampleErr != nil {
 		fmt.Println(sampleErr)
 		w.WriteHeader(http.StatusBadRequest)

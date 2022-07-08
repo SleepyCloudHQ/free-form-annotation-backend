@@ -12,8 +12,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if sessionErr := db.AutoMigrate(&models.Session{}); sessionErr != nil {
-		log.Fatal(sessionErr)
+	if datasetErr := db.AutoMigrate(&models.Dataset{}); datasetErr != nil {
+		log.Fatal(datasetErr)
 		return
 	}
 
