@@ -21,48 +21,48 @@ func NewSampleHandler(db *gorm.DB) *SampleHandler {
 	}
 }
 
-func (s *SampleHandler) GetSamples(sessionId uint) (*[]models.Sample, error) {
+func (s *SampleHandler) GetSamples(datasetId uint) (*[]models.Sample, error) {
 	var samples []models.Sample
-	if dbErr := s.DB.Where("session_id = ?", sessionId).Find(&samples).Error; dbErr != nil {
+	if dbErr := s.DB.Where("dataset_id = ?", datasetId).Find(&samples).Error; dbErr != nil {
 		return nil, dbErr
 	}
 
 	return &samples, nil
 }
 
-func (s *SampleHandler) GetSamplesWithStatus(sessionId uint, status models.StatusType) (*[]models.Sample, error) {
+func (s *SampleHandler) GetSamplesWithStatus(datasetId uint, status models.StatusType) (*[]models.Sample, error) {
 	var samples []models.Sample
-	if dbErr := s.DB.Where("session_id = ? AND status = ?", sessionId, status).Find(&samples).Error; dbErr != nil {
+	if dbErr := s.DB.Where("dataset_id = ? AND status = ?", datasetId, status).Find(&samples).Error; dbErr != nil {
 		return nil, dbErr
 	}
 
 	return &samples, nil
 }
 
-func (s *SampleHandler) GetSample(sessionId uint, sampleId uint) (*models.Sample, error) {
+func (s *SampleHandler) GetSample(datasetId uint, sampleId uint) (*models.Sample, error) {
 	sample := &models.Sample{}
 
-	if dbErr := s.DB.Where("session_id = ?", sessionId).First(&sample, sampleId).Error; dbErr != nil {
+	if dbErr := s.DB.Where("dataset_id = ?", datasetId).First(&sample, sampleId).Error; dbErr != nil {
 		return nil, dbErr
 	}
 
 	return sample, nil
 }
 
-func (s *SampleHandler) PatchSample(sessionId uint, sampleId uint, patchRequest *PatchSampleRequest) (*models.Sample, error) {
+func (s *SampleHandler) PatchSample(datasetId uint, sampleId uint, patchRequest *PatchSampleRequest) (*models.Sample, error) {
 	sample := &models.Sample{}
 	updateData := models.Sample{Annotations: patchRequest.Annotations, Status: patchRequest.Status}
-	if dbErr := s.DB.Where("session_id = ?", sessionId).First(&sample, sampleId).Updates(updateData).Error; dbErr != nil {
+	if dbErr := s.DB.Where("dataset_id = ?", datasetId).First(&sample, sampleId).Updates(updateData).Error; dbErr != nil {
 		return nil, dbErr
 	}
 
 	return sample, nil
 }
 
-func (s *SampleHandler) AssignNextSample(sessionId uint) (*models.Sample, error) {
+func (s *SampleHandler) AssignNextSample(datasetId uint) (*models.Sample, error) {
 	sample := &models.Sample{}
 
-	if dbErr := s.DB.Where("status = ? AND session_id = ?", models.Unvisited, sessionId).First(&sample).Error; dbErr != nil {
+	if dbErr := s.DB.Where("status = ? AND dataset_id = ?", models.Unvisited, datasetId).First(&sample).Error; dbErr != nil {
 		return nil, dbErr
 	}
 
