@@ -35,8 +35,9 @@ func (st StatusType) IsValid() error {
 
 type Sample struct {
 	gorm.Model
-	DatasetID   uint
-	Annotations datatypes.JSON
-	Status      StatusType `gorm:"default:unvisited" json:"status"`
-	Data        string
+	DatasetID   uint           `json:"dataset_id"`
+	Annotations datatypes.JSON `json:"annotations"`
+	Metadata    datatypes.JSON `json:"metadata"`
+	Status      StatusType     `gorm:"default:unvisited" json:"status"`
+	Text        string         `json:"text"`
 }
