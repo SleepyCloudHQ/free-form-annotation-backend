@@ -46,7 +46,8 @@ func (a *App) InitializeRoutes() {
 	cors := mux_handlers.CORS(
 		mux_handlers.AllowedHeaders([]string{"content-type"}),
 		mux_handlers.AllowedOrigins([]string{"http://localhost:3000"}),
-		mux_handlers.AllowCredentials(),
+		mux_handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PATCH"}),
+		//mux_handlers.AllowCredentials(),
 	)
 
 	a.Router.Use(cors, middlewares.JSONResponseMiddleware)
@@ -57,7 +58,7 @@ func (a *App) InitializeRoutes() {
 	a.Router.HandleFunc("/datasets/{id:[0-9]+}/samples/next", a.assignNextSample).Methods("GET")
 	a.Router.HandleFunc("/datasets/{id:[0-9]+}/samples/{status:[a-z]+}", a.getSamplesWithStatus).Methods("GET")
 	a.Router.HandleFunc("/datasets/{id:[0-9]+}/samples/{sampleId:[0-9]+}", a.getSample).Methods("GET")
-	a.Router.HandleFunc("/datasets/{id:[0-9]+}/samples/{sampleId:[0-9]+}", a.patchSample).Methods("PATCH")
+	a.Router.HandleFunc("/datasets/{id:[0-9]+}/samples/{sampleId:[0-9]+}", a.patchSample).Methods("PATCH", "OPTIONS")
 }
 
 func (a *App) getDatasets(w http.ResponseWriter, r *http.Request) {

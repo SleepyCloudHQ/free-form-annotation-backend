@@ -9,6 +9,7 @@ import (
 type PatchSampleRequest struct {
 	Status      models.StatusType `json:"status"`
 	Annotations datatypes.JSON    `json:"annotations"`
+	Metadata    datatypes.JSON    `json:"metadata"`
 }
 
 type SampleHandler struct {
@@ -51,7 +52,7 @@ func (s *SampleHandler) GetSample(datasetId uint, sampleId uint) (*models.Sample
 
 func (s *SampleHandler) PatchSample(datasetId uint, sampleId uint, patchRequest *PatchSampleRequest) (*models.Sample, error) {
 	sample := &models.Sample{}
-	updateData := models.Sample{Annotations: patchRequest.Annotations, Status: patchRequest.Status}
+	updateData := models.Sample{Annotations: patchRequest.Annotations, Metadata: patchRequest.Metadata, Status: patchRequest.Status}
 	if dbErr := s.DB.Where("dataset_id = ?", datasetId).First(&sample, sampleId).Updates(updateData).Error; dbErr != nil {
 		return nil, dbErr
 	}
