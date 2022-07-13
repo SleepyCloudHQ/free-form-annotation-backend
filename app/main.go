@@ -193,7 +193,7 @@ func (a *App) assignNextSample(w http.ResponseWriter, r *http.Request) {
 	sample, sampleErr := a.SampleHandler.AssignNextSample(uint(datasetId))
 	if sampleErr != nil {
 		fmt.Println(sampleErr)
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte(sampleErr.Error()))
 		return
 	}
