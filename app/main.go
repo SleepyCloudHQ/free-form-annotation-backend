@@ -1,11 +1,13 @@
 package main
 
 import (
+	"backend/app/auth"
 	"backend/app/handlers"
 	"backend/app/middlewares"
 	"backend/app/models"
 	"encoding/json"
 	"fmt"
+	"github.com/go-playground/validator/v10"
 	mux_handlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"gorm.io/driver/sqlite"
@@ -18,6 +20,9 @@ import (
 type App struct {
 	Router         *mux.Router
 	DB             *gorm.DB
+	TokenAuth      *auth.TokenAuth
+	UserAuth       *auth.UserAuth
+	AuthHandler    *handlers.AuthHandler
 	DatasetHandler *handlers.DatasetHandler
 	SampleHandler  *handlers.SampleHandler
 }
@@ -28,8 +33,16 @@ func (a *App) Initialize() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	validate := validator.New()
+
 	a.DB = db
 	a.Router = mux.NewRouter()
+
+	a.TokenAuth = auth.NewTokenAuth(a.DB)
+	a.UserAuth = auth.NewUserAuth(a.DB)
+
+	a.AuthHandler = handlers.NewAuthHandler(a.UserAuth, a.TokenAuth, validate)
 	a.DatasetHandler = handlers.NewDatasetHandler(db)
 	a.SampleHandler = handlers.NewSampleHandler(db)
 
@@ -47,18 +60,73 @@ func (a *App) InitializeRoutes() {
 		mux_handlers.AllowedHeaders([]string{"content-type"}),
 		mux_handlers.AllowedOrigins([]string{"http://localhost:3000"}),
 		mux_handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PATCH"}),
-		//mux_handlers.AllowCredentials(),
+		mux_handlers.AllowCredentials(),
 	)
 
 	a.Router.Use(cors, middlewares.JSONResponseMiddleware)
 
-	a.Router.HandleFunc("/datasets", a.getDatasets).Methods("GET")
-	a.Router.HandleFunc("/datasets/{id:[0-9]+}", a.getDataset).Methods("GET")
-	a.Router.HandleFunc("/datasets/{id:[0-9]+}/samples", a.getSamples).Methods("GET")
-	a.Router.HandleFunc("/datasets/{id:[0-9]+}/samples/next", a.assignNextSample).Methods("GET")
-	a.Router.HandleFunc("/datasets/{id:[0-9]+}/samples/{status:[a-z]+}", a.getSamplesWithStatus).Methods("GET")
-	a.Router.HandleFunc("/datasets/{id:[0-9]+}/samples/{sampleId:[0-9]+}", a.getSample).Methods("GET")
-	a.Router.HandleFunc("/datasets/{id:[0-9]+}/samples/{sampleId:[0-9]+}", a.patchSample).Methods("PATCH", "OPTIONS")
+	authRouter := a.Router.PathPrefix("/auth").Subrouter()
+	authRouter.HandleFunc("/login", a.login).Methods("POST", "OPTIONS")
+	authRouter.HandleFunc("/refresh-token", a.refreshToken).Methods("POST")
+
+	userRouter := a.Router.PathPrefix("/user").Subrouter()
+	userRouter.Use(a.TokenAuth.AuthTokenMiddleware)
+	userRouter.HandleFunc("/", a.getUser).Methods("GET")
+
+	datasetsRouter := a.Router.PathPrefix("/datasets").Subrouter()
+	datasetsRouter.Use(a.TokenAuth.AuthTokenMiddleware)
+
+	datasetsRouter.HandleFunc("/", a.getDatasets).Methods("GET")
+	datasetsRouter.HandleFunc("/{id:[0-9]+}/", a.getDataset).Methods("GET")
+	datasetsRouter.HandleFunc("/{id:[0-9]+}/samples/", a.getSamples).Methods("GET")
+	datasetsRouter.HandleFunc("/{id:[0-9]+}/samples/next/", a.assignNextSample).Methods("GET")
+	datasetsRouter.HandleFunc("/{id:[0-9]+}/samples/{status:[a-z]+}/", a.getSamplesWithStatus).Methods("GET")
+	datasetsRouter.HandleFunc("/{id:[0-9]+}/samples/{sampleId:[0-9]+}/", a.getSample).Methods("GET")
+	datasetsRouter.HandleFunc("/{id:[0-9]+}/samples/{sampleId:[0-9]+}/", a.patchSample).Methods("PATCH", "OPTIONS")
+
+}
+
+func (a *App) login(w http.ResponseWriter, r *http.Request) {
+	loginRequest := &handlers.LoginRequest{}
+	if err := json.NewDecoder(r.Body).Decode(loginRequest); err != nil {
+		fmt.Println(err)
+		return
+	}
+	loginResponse, loginErr := a.AuthHandler.Login(loginRequest)
+	if loginErr != nil {
+		fmt.Println(loginErr)
+		return
+	}
+
+	http.SetCookie(w, loginResponse.Cookies.AuthTokenCookie)
+	http.SetCookie(w, loginResponse.Cookies.RefreshTokenCookie)
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(loginResponse.User)
+}
+
+func (a *App) refreshToken(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie(auth.RefreshTokenCookieName)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("Unauthorized"))
+		return
+	}
+
+	authCookies, loginErr := a.AuthHandler.RefreshToken(cookie.Value)
+	if loginErr != nil {
+		fmt.Println(loginErr)
+		return
+	}
+
+	http.SetCookie(w, authCookies.AuthTokenCookie)
+	http.SetCookie(w, authCookies.RefreshTokenCookie)
+	w.WriteHeader(http.StatusOK)
+}
+
+func (a *App) getUser(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value(auth.ContextUserKey).(*models.User)
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(user)
 }
 
 func (a *App) getDatasets(w http.ResponseWriter, r *http.Request) {
