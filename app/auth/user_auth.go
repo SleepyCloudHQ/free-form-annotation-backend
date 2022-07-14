@@ -11,13 +11,7 @@ type UserAuth struct {
 }
 
 func NewUserAuth(db *gorm.DB) *UserAuth {
-	auth := &UserAuth{DB: db}
-	auth.migrateTables()
-	return auth
-}
-
-func (a *UserAuth) migrateTables() {
-	a.DB.AutoMigrate(&models.User{})
+	return &UserAuth{DB: db}
 }
 
 func (a *UserAuth) CreateUser(email string, password string) (*models.User, error) {

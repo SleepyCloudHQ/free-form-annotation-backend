@@ -25,14 +25,7 @@ type TokenAuth struct {
 }
 
 func NewTokenAuth(db *gorm.DB) *TokenAuth {
-	auth := &TokenAuth{DB: db}
-	auth.migrateTables()
-	return auth
-}
-
-func (a *TokenAuth) migrateTables() {
-	a.DB.AutoMigrate(&models.RefreshToken{})
-	a.DB.AutoMigrate(&models.AuthToken{})
+	return &TokenAuth{DB: db}
 }
 
 func (a *TokenAuth) CreateAuthToken(user *models.User) (*models.AuthToken, error) {
@@ -131,6 +124,28 @@ func (a *TokenAuth) CreateAuthCookies(authToken *models.AuthToken) (*http.Cookie
 		Value:    authToken.RefreshToken.Token,
 		Path:     "/",
 		MaxAge:   int(authToken.RefreshToken.ExpiresAt.Sub(now).Seconds()),
+		Secure:   false,
+		HttpOnly: true,
+	}
+
+	return authTokenCookie, refreshTokenCookie
+}
+
+func (a *TokenAuth) CreateLogoutCookies() (*http.Cookie, *http.Cookie) {
+	authTokenCookie := &http.Cookie{
+		Name:     AuthTokenCookieName,
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		Secure:   false,
+		HttpOnly: true,
+	}
+
+	refreshTokenCookie := &http.Cookie{
+		Name:     RefreshTokenCookieName,
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
 		Secure:   false,
 		HttpOnly: true,
 	}

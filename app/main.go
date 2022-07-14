@@ -66,8 +66,9 @@ func (a *App) InitializeRoutes() {
 	a.Router.Use(cors, middlewares.JSONResponseMiddleware)
 
 	authRouter := a.Router.PathPrefix("/auth").Subrouter()
-	authRouter.HandleFunc("/login", a.login).Methods("POST", "OPTIONS")
-	authRouter.HandleFunc("/refresh-token", a.refreshToken).Methods("POST")
+	authRouter.HandleFunc("/login/", a.login).Methods("POST", "OPTIONS")
+	authRouter.HandleFunc("/refresh-token/", a.refreshToken).Methods("POST")
+	authRouter.Handle("/logout/", a.TokenAuth.AuthTokenMiddleware(http.HandlerFunc(a.logout))).Methods("POST")
 
 	userRouter := a.Router.PathPrefix("/user").Subrouter()
 	userRouter.Use(a.TokenAuth.AuthTokenMiddleware)
@@ -89,11 +90,15 @@ func (a *App) InitializeRoutes() {
 func (a *App) login(w http.ResponseWriter, r *http.Request) {
 	loginRequest := &handlers.LoginRequest{}
 	if err := json.NewDecoder(r.Body).Decode(loginRequest); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
 		fmt.Println(err)
 		return
 	}
 	loginResponse, loginErr := a.AuthHandler.Login(loginRequest)
 	if loginErr != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(loginErr.Error()))
 		fmt.Println(loginErr)
 		return
 	}
@@ -102,6 +107,14 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, loginResponse.Cookies.RefreshTokenCookie)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(loginResponse.User)
+}
+
+func (a *App) logout(w http.ResponseWriter, r *http.Request) {
+	loggedOutAuthTokenCookie, loggedOutRefreshTokenCookie := a.TokenAuth.CreateLogoutCookies()
+
+	http.SetCookie(w, loggedOutAuthTokenCookie)
+	http.SetCookie(w, loggedOutRefreshTokenCookie)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (a *App) refreshToken(w http.ResponseWriter, r *http.Request) {
