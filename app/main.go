@@ -34,6 +34,10 @@ func (a *App) Initialize() {
 		log.Fatal(err)
 	}
 
+	if jointTableErr := db.SetupJoinTable(&models.User{}, "Datasets", &models.UserDataset{}); jointTableErr != nil {
+		log.Fatal(jointTableErr)
+	}
+
 	validate := validator.New()
 
 	a.DB = db
@@ -74,17 +78,32 @@ func (a *App) InitializeRoutes() {
 	userRouter.Use(a.TokenAuth.AuthTokenMiddleware)
 	userRouter.HandleFunc("/", a.getUser).Methods("GET")
 
+	adminRouter := a.Router.PathPrefix("/admin").Subrouter()
+	adminRouter.Use(a.TokenAuth.AuthTokenMiddleware, middlewares.IsAdminMiddleware)
+
+	adminRouter.HandleFunc("/", a.getAdmin).Methods("GET")
+
 	datasetsRouter := a.Router.PathPrefix("/datasets").Subrouter()
 	datasetsRouter.Use(a.TokenAuth.AuthTokenMiddleware)
 
 	datasetsRouter.HandleFunc("/", a.getDatasets).Methods("GET")
-	datasetsRouter.HandleFunc("/{id:[0-9]+}/", a.getDataset).Methods("GET")
-	datasetsRouter.HandleFunc("/{id:[0-9]+}/samples/", a.getSamples).Methods("GET")
-	datasetsRouter.HandleFunc("/{id:[0-9]+}/samples/next/", a.assignNextSample).Methods("GET")
-	datasetsRouter.HandleFunc("/{id:[0-9]+}/samples/{status:[a-z]+}/", a.getSamplesWithStatus).Methods("GET")
-	datasetsRouter.HandleFunc("/{id:[0-9]+}/samples/{sampleId:[0-9]+}/", a.getSample).Methods("GET")
-	datasetsRouter.HandleFunc("/{id:[0-9]+}/samples/{sampleId:[0-9]+}/", a.patchSample).Methods("PATCH", "OPTIONS")
 
+	datasetRouter := datasetsRouter.PathPrefix("/{dataset_id:[0-9]+}").Subrouter()
+	datasetPermsMiddleware := middlewares.GetDatasetPermsMiddleware(a.DB)
+	datasetRouter.Use(middlewares.ParseDatasetIdMiddleware, datasetPermsMiddleware)
+
+	datasetRouter.HandleFunc("/", a.getDataset).Methods("GET")
+	datasetRouter.HandleFunc("/samples/", a.getSamples).Methods("GET")
+	datasetRouter.HandleFunc("/samples/next/", a.assignNextSample).Methods("GET")
+	datasetRouter.HandleFunc("/samples/{status:[a-z]+}/", a.getSamplesWithStatus).Methods("GET")
+	datasetRouter.HandleFunc("/samples/{sampleId:[0-9]+}/", a.getSample).Methods("GET")
+	datasetRouter.HandleFunc("/samples/{sampleId:[0-9]+}/", a.patchSample).Methods("PATCH", "OPTIONS")
+
+}
+
+func (a *App) getAdmin(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	//json.NewEncoder(w).Encode(loginResponse.User)
 }
 
 func (a *App) login(w http.ResponseWriter, r *http.Request) {
@@ -102,7 +121,6 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(loginErr)
 		return
 	}
-
 	http.SetCookie(w, loginResponse.Cookies.AuthTokenCookie)
 	http.SetCookie(w, loginResponse.Cookies.RefreshTokenCookie)
 	w.WriteHeader(http.StatusOK)
@@ -137,7 +155,7 @@ func (a *App) refreshToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) getUser(w http.ResponseWriter, r *http.Request) {
-	user := r.Context().Value(auth.ContextUserKey).(*models.User)
+	user := r.Context().Value(auth.UserContextKey).(*models.User)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(user)
 }
@@ -149,15 +167,7 @@ func (a *App) getDatasets(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) getDataset(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	datasetIdString := vars["id"]
-	datasetId, err := strconv.Atoi(datasetIdString)
-	if err != nil {
-		fmt.Println("Error converting id")
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
-		return
-	}
+	datasetId := r.Context().Value(middlewares.DatasetIdContextKey).(int)
 
 	dataset, datasetErr := a.DatasetHandler.GetDataset(uint(datasetId))
 	if datasetErr != nil {
@@ -172,15 +182,7 @@ func (a *App) getDataset(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) getSamples(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	datasetIdString := vars["id"]
-	datasetId, err := strconv.Atoi(datasetIdString)
-	if err != nil {
-		fmt.Println("Error converting id")
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
-		return
-	}
+	datasetId := r.Context().Value(middlewares.DatasetIdContextKey).(int)
 
 	samples, samplesErr := a.SampleHandler.GetSamples(uint(datasetId))
 	if samplesErr != nil {
@@ -196,14 +198,7 @@ func (a *App) getSamples(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) getSample(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	datasetIdString := vars["id"]
-	datasetId, datasetErr := strconv.Atoi(datasetIdString)
-	if datasetErr != nil {
-		fmt.Println("Error converting dataset id")
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(datasetErr.Error()))
-		return
-	}
+	datasetId := r.Context().Value(middlewares.DatasetIdContextKey).(int)
 
 	sampleIdString := vars["sampleId"]
 	sampleId, err := strconv.Atoi(sampleIdString)
@@ -228,15 +223,7 @@ func (a *App) getSample(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) getSamplesWithStatus(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	// parse dataset id
-	datasetIdString := vars["id"]
-	datasetId, err := strconv.Atoi(datasetIdString)
-	if err != nil {
-		fmt.Println("Error converting dataset id")
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
-		return
-	}
+	datasetId := r.Context().Value(middlewares.DatasetIdContextKey).(int)
 
 	// parse sample status
 	statusString := vars["status"]
@@ -261,15 +248,7 @@ func (a *App) getSamplesWithStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) assignNextSample(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	datasetIdString := vars["id"]
-	datasetId, err := strconv.Atoi(datasetIdString)
-	if err != nil {
-		fmt.Println("Error converting id")
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
-		return
-	}
+	datasetId := r.Context().Value(middlewares.DatasetIdContextKey).(int)
 
 	sample, sampleErr := a.SampleHandler.AssignNextSample(uint(datasetId))
 	if sampleErr != nil {
@@ -285,14 +264,7 @@ func (a *App) assignNextSample(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) patchSample(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	datasetIdString := vars["id"]
-	datasetId, datasetErr := strconv.Atoi(datasetIdString)
-	if datasetErr != nil {
-		fmt.Println("Error converting dataset id")
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(datasetErr.Error()))
-		return
-	}
+	datasetId := r.Context().Value(middlewares.DatasetIdContextKey).(int)
 
 	sampleIdString := vars["sampleId"]
 	sampleId, err := strconv.Atoi(sampleIdString)
@@ -331,7 +303,7 @@ func logRequest(handler http.Handler) http.Handler {
 }
 
 func (a *App) Run() {
-	log.Fatal(http.ListenAndServe(":8010", logRequest(a.Router)))
+	log.Fatal(http.ListenAndServe("localhost:8010", logRequest(a.Router)))
 }
 
 func main() {
