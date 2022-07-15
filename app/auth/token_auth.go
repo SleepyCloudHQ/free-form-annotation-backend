@@ -18,7 +18,7 @@ const RefreshTokenCookieName = "refresh_token"
 
 type ContextKey string
 
-const ContextUserKey ContextKey = "user"
+const UserContextKey ContextKey = "user"
 
 type TokenAuth struct {
 	DB *gorm.DB
@@ -103,7 +103,7 @@ func (a *TokenAuth) AuthTokenMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), ContextUserKey, user)
+		ctx := context.WithValue(r.Context(), UserContextKey, user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
