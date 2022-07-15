@@ -1,6 +1,6 @@
 package models
 
 type UserDataset struct {
-	UserID    int `gorm:"primaryKey"`
-	DatasetID int `gorm:"primaryKey"`
+	UserID    uint `gorm:"primaryKey"`
+	DatasetID uint `gorm:"primaryKey"`
 }

@@ -89,7 +89,8 @@ func (a *App) InitializeRoutes() {
 	datasetsRouter.HandleFunc("/", a.getDatasets).Methods("GET")
 
 	datasetRouter := datasetsRouter.PathPrefix("/{dataset_id:[0-9]+}").Subrouter()
-	datasetRouter.Use(middlewares.ParseDatasetIdMiddleware)
+	datasetPermsMiddleware := middlewares.GetDatasetPermsMiddleware(a.DB)
+	datasetRouter.Use(middlewares.ParseDatasetIdMiddleware, datasetPermsMiddleware)
 
 	datasetRouter.HandleFunc("/", a.getDataset).Methods("GET")
 	datasetRouter.HandleFunc("/samples/", a.getSamples).Methods("GET")
@@ -120,7 +121,6 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(loginErr)
 		return
 	}
-
 	http.SetCookie(w, loginResponse.Cookies.AuthTokenCookie)
 	http.SetCookie(w, loginResponse.Cookies.RefreshTokenCookie)
 	w.WriteHeader(http.StatusOK)
@@ -303,7 +303,7 @@ func logRequest(handler http.Handler) http.Handler {
 }
 
 func (a *App) Run() {
-	log.Fatal(http.ListenAndServe(":8010", logRequest(a.Router)))
+	log.Fatal(http.ListenAndServe("localhost:8010", logRequest(a.Router)))
 }
 
 func main() {
