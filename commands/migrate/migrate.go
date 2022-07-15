@@ -27,6 +27,11 @@ func main() {
 		return
 	}
 
+	if migrationErr := db.AutoMigrate(&models.UserDataset{}); migrationErr != nil {
+		log.Fatal(migrationErr)
+		return
+	}
+
 	if migrationErr := db.AutoMigrate(&models.AuthToken{}); migrationErr != nil {
 		log.Fatal(migrationErr)
 		return
