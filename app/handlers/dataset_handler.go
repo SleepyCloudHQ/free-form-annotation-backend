@@ -41,6 +41,20 @@ func (s *DatasetHandler) GetDatasets() *[]DatasetData {
 	return &result
 }
 
+func (s *DatasetHandler) GetDatasetsForUser(user *models.User) (*[]DatasetData, error) {
+	var datasets []models.Dataset
+	if dbErr := s.DB.Model(user).Association("Datasets").Find(&datasets); dbErr != nil {
+		return nil, dbErr
+	}
+
+	result := make([]DatasetData, len(datasets))
+	for i, dataset := range datasets {
+		result[i] = *s.mapDatasetToDatasetData(&dataset)
+	}
+	return &result, nil
+
+}
+
 func (s *DatasetHandler) GetDataset(id uint) (*DatasetData, error) {
 	dataset := &models.Dataset{}
 	if dbErr := s.DB.First(dataset, id).Error; dbErr != nil {
@@ -71,7 +85,7 @@ func (s *DatasetHandler) getDatasetsStats(dataset *models.Dataset) *DatasetStats
 
 	stats.TotalSamples = s.DB.Model(dataset).Association("Samples").Count()
 	stats.CompletedSamples = s.DB.Model(dataset).Where("status IN ?", completed).Association("Samples").Count()
-	stats.PendingSamples = s.DB.Model(dataset).Where("status = ?", models.Unvisited).Association("Samples").Count()
+	stats.PendingSamples = s.DB.Model(dataset).Where("status IS NULL AND assigned_to IS NULL").Association("Samples").Count()
 
 	return stats
 }
