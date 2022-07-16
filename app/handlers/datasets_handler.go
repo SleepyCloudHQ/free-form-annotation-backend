@@ -20,17 +20,17 @@ type DatasetData struct {
 	Stats     *DatasetStats      `json:"stats"`
 }
 
-type DatasetHandler struct {
+type DatasetsHandler struct {
 	DB *gorm.DB
 }
 
-func NewDatasetHandler(db *gorm.DB) *DatasetHandler {
-	return &DatasetHandler{
+func NewDatasetsHandler(db *gorm.DB) *DatasetsHandler {
+	return &DatasetsHandler{
 		DB: db,
 	}
 }
 
-func (s *DatasetHandler) GetDatasets() *[]DatasetData {
+func (s *DatasetsHandler) GetDatasets() *[]DatasetData {
 	var datasets []models.Dataset
 	s.DB.Find(&datasets)
 
@@ -41,7 +41,7 @@ func (s *DatasetHandler) GetDatasets() *[]DatasetData {
 	return &result
 }
 
-func (s *DatasetHandler) GetDatasetsForUser(user *models.User) (*[]DatasetData, error) {
+func (s *DatasetsHandler) GetDatasetsForUser(user *models.User) (*[]DatasetData, error) {
 	var datasets []models.Dataset
 	if dbErr := s.DB.Model(user).Association("Datasets").Find(&datasets); dbErr != nil {
 		return nil, dbErr
@@ -55,7 +55,7 @@ func (s *DatasetHandler) GetDatasetsForUser(user *models.User) (*[]DatasetData, 
 
 }
 
-func (s *DatasetHandler) GetDataset(id uint) (*DatasetData, error) {
+func (s *DatasetsHandler) GetDataset(id uint) (*DatasetData, error) {
 	dataset := &models.Dataset{}
 	if dbErr := s.DB.First(dataset, id).Error; dbErr != nil {
 		return nil, dbErr
@@ -64,7 +64,7 @@ func (s *DatasetHandler) GetDataset(id uint) (*DatasetData, error) {
 	return s.mapDatasetToDatasetData(dataset), nil
 }
 
-func (s *DatasetHandler) mapDatasetToDatasetData(dataset *models.Dataset) *DatasetData {
+func (s *DatasetsHandler) mapDatasetToDatasetData(dataset *models.Dataset) *DatasetData {
 	return &DatasetData{
 		ID:        dataset.ID,
 		Name:      dataset.Name,
@@ -74,7 +74,7 @@ func (s *DatasetHandler) mapDatasetToDatasetData(dataset *models.Dataset) *Datas
 	}
 }
 
-func (s *DatasetHandler) getDatasetsStats(dataset *models.Dataset) *DatasetStats {
+func (s *DatasetsHandler) getDatasetsStats(dataset *models.Dataset) *DatasetStats {
 	stats := &DatasetStats{
 		TotalSamples:     0,
 		CompletedSamples: 0,

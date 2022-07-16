@@ -23,8 +23,8 @@ type App struct {
 	TokenAuth      *auth.TokenAuth
 	UserAuth       *auth.UserAuth
 	AuthHandler    *handlers.AuthHandler
-	DatasetHandler *handlers.DatasetHandler
-	SampleHandler  *handlers.SampleHandler
+	DatasetHandler *handlers.DatasetsHandler
+	SampleHandler  *handlers.SamplesHandler
 }
 
 func (a *App) Initialize() {
@@ -47,8 +47,8 @@ func (a *App) Initialize() {
 	a.UserAuth = auth.NewUserAuth(a.DB)
 
 	a.AuthHandler = handlers.NewAuthHandler(a.UserAuth, a.TokenAuth, validate)
-	a.DatasetHandler = handlers.NewDatasetHandler(db)
-	a.SampleHandler = handlers.NewSampleHandler(db)
+	a.DatasetHandler = handlers.NewDatasetsHandler(db)
+	a.SampleHandler = handlers.NewSamplesHandler(db)
 
 	a.Migrate()
 	a.InitializeRoutes()
