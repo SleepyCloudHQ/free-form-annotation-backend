@@ -15,7 +15,7 @@ const DatasetIdContextKey ContextKey = "dataset_id"
 func ParseDatasetIdMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		datasetIdString := vars["dataset_id"]
+		datasetIdString := vars["datasetId"]
 		datasetId, err := strconv.Atoi(datasetIdString)
 		if err != nil {
 			fmt.Println("Error converting dataset id")

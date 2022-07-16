@@ -18,13 +18,14 @@ import (
 )
 
 type App struct {
-	Router         *mux.Router
-	DB             *gorm.DB
-	TokenAuth      *auth.TokenAuth
-	UserAuth       *auth.UserAuth
-	AuthHandler    *handlers.AuthHandler
-	DatasetHandler *handlers.DatasetsHandler
-	SampleHandler  *handlers.SamplesHandler
+	Router          *mux.Router
+	DB              *gorm.DB
+	TokenAuth       *auth.TokenAuth
+	UserAuth        *auth.UserAuth
+	AuthHandler     *handlers.AuthHandler
+	DatasetsHandler *handlers.DatasetsHandler
+	SamplesHandler  *handlers.SamplesHandler
+	UsersHandler    *handlers.UsersHandler
 }
 
 func (a *App) Initialize() {
@@ -47,8 +48,9 @@ func (a *App) Initialize() {
 	a.UserAuth = auth.NewUserAuth(a.DB)
 
 	a.AuthHandler = handlers.NewAuthHandler(a.UserAuth, a.TokenAuth, validate)
-	a.DatasetHandler = handlers.NewDatasetsHandler(db)
-	a.SampleHandler = handlers.NewSamplesHandler(db)
+	a.DatasetsHandler = handlers.NewDatasetsHandler(db)
+	a.SamplesHandler = handlers.NewSamplesHandler(db)
+	a.UsersHandler = handlers.NewUsersHandler(db, validate)
 
 	a.Migrate()
 	a.InitializeRoutes()
@@ -81,7 +83,8 @@ func (a *App) InitializeRoutes() {
 	adminRouter := a.Router.PathPrefix("/admin").Subrouter()
 	adminRouter.Use(a.TokenAuth.AuthTokenMiddleware, middlewares.IsAdminMiddleware)
 
-	adminRouter.HandleFunc("/roles", a.getRoles).Methods("GET")
+	adminRouter.HandleFunc("/users/", a.getUsers).Methods("GET")
+	adminRouter.HandleFunc("/users/{userId:[0-9]+}/roles/", a.patchUserRole).Methods("PATCH")
 	//adminRouter.HandleFunc("/perms", a.getAdmin).Methods("GET")
 
 	datasetsRouter := a.Router.PathPrefix("/datasets").Subrouter()
@@ -89,7 +92,7 @@ func (a *App) InitializeRoutes() {
 
 	datasetsRouter.HandleFunc("/", a.getDatasets).Methods("GET")
 
-	datasetRouter := datasetsRouter.PathPrefix("/{dataset_id:[0-9]+}").Subrouter()
+	datasetRouter := datasetsRouter.PathPrefix("/{datasetId:[0-9]+}").Subrouter()
 	datasetPermsMiddleware := middlewares.GetDatasetPermsMiddleware(a.DB)
 	datasetRouter.Use(middlewares.ParseDatasetIdMiddleware, datasetPermsMiddleware)
 
@@ -99,12 +102,42 @@ func (a *App) InitializeRoutes() {
 	datasetRouter.HandleFunc("/samples/{status:[a-z]+}/", a.getSamplesWithStatus).Methods("GET")
 	datasetRouter.HandleFunc("/samples/{sampleId:[0-9]+}/", a.getSample).Methods("GET")
 	datasetRouter.HandleFunc("/samples/{sampleId:[0-9]+}/", a.patchSample).Methods("PATCH", "OPTIONS")
-
 }
 
-func (a *App) getRoles(w http.ResponseWriter, r *http.Request) {
+func (a *App) getUsers(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	//json.NewEncoder(w).Encode(loginResponse.User)
+	json.NewEncoder(w).Encode(a.UsersHandler.GetUsers())
+}
+
+func (a *App) patchUserRole(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	userIdString := vars["userId"]
+	userId, userIdErr := strconv.Atoi(userIdString)
+	if userIdErr != nil {
+		fmt.Println("Error converting user id")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(userIdErr.Error()))
+		return
+	}
+
+	patchRoleRequest := &handlers.PatchUserRoleRequest{}
+	if err := json.NewDecoder(r.Body).Decode(patchRoleRequest); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+		fmt.Println(err)
+		return
+	}
+
+	user, patchErr := a.UsersHandler.PatchUserRole(uint(userId), patchRoleRequest)
+	if patchErr != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(patchErr.Error()))
+		fmt.Println(patchErr)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(user)
 }
 
 func (a *App) login(w http.ResponseWriter, r *http.Request) {
@@ -166,10 +199,10 @@ func (a *App) getDatasets(w http.ResponseWriter, r *http.Request) {
 
 	var datasets *[]handlers.DatasetData
 	if user.Role == models.AdminRole {
-		datasets = a.DatasetHandler.GetDatasets()
+		datasets = a.DatasetsHandler.GetDatasets()
 	} else {
 		var datasetsErr error
-		datasets, datasetsErr = a.DatasetHandler.GetDatasetsForUser(user)
+		datasets, datasetsErr = a.DatasetsHandler.GetDatasetsForUser(user)
 		if datasetsErr != nil {
 			fmt.Println(datasetsErr)
 			return
@@ -183,7 +216,7 @@ func (a *App) getDatasets(w http.ResponseWriter, r *http.Request) {
 func (a *App) getDataset(w http.ResponseWriter, r *http.Request) {
 	datasetId := r.Context().Value(middlewares.DatasetIdContextKey).(int)
 
-	dataset, datasetErr := a.DatasetHandler.GetDataset(uint(datasetId))
+	dataset, datasetErr := a.DatasetsHandler.GetDataset(uint(datasetId))
 	if datasetErr != nil {
 		fmt.Println(datasetErr)
 		w.WriteHeader(http.StatusBadRequest)
@@ -198,7 +231,7 @@ func (a *App) getDataset(w http.ResponseWriter, r *http.Request) {
 func (a *App) getSamples(w http.ResponseWriter, r *http.Request) {
 	datasetId := r.Context().Value(middlewares.DatasetIdContextKey).(int)
 
-	samples, samplesErr := a.SampleHandler.GetSamples(uint(datasetId))
+	samples, samplesErr := a.SamplesHandler.GetSamples(uint(datasetId))
 	if samplesErr != nil {
 		fmt.Println(samplesErr)
 		w.WriteHeader(http.StatusBadRequest)
@@ -223,7 +256,7 @@ func (a *App) getSample(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sample, sampleErr := a.SampleHandler.GetSample(uint(datasetId), uint(sampleId))
+	sample, sampleErr := a.SamplesHandler.GetSample(uint(datasetId), uint(sampleId))
 	if sampleErr != nil {
 		fmt.Println(sampleErr)
 		w.WriteHeader(http.StatusBadRequest)
@@ -249,7 +282,7 @@ func (a *App) getSamplesWithStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	samples, samplesErr := a.SampleHandler.GetSamplesWithStatus(uint(datasetId), status)
+	samples, samplesErr := a.SamplesHandler.GetSamplesWithStatus(uint(datasetId), status)
 	if samplesErr != nil {
 		fmt.Println(samplesErr)
 		w.WriteHeader(http.StatusBadRequest)
@@ -265,7 +298,7 @@ func (a *App) assignNextSample(w http.ResponseWriter, r *http.Request) {
 	datasetId := r.Context().Value(middlewares.DatasetIdContextKey).(int)
 	user := r.Context().Value(auth.UserContextKey).(*models.User)
 
-	sample, sampleErr := a.SampleHandler.AssignNextSample(uint(datasetId), user.ID)
+	sample, sampleErr := a.SamplesHandler.AssignNextSample(uint(datasetId), user.ID)
 	if sampleErr != nil {
 		fmt.Println(sampleErr)
 		w.WriteHeader(http.StatusNotFound)
@@ -298,7 +331,7 @@ func (a *App) patchSample(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sample, sampleErr := a.SampleHandler.PatchSample(uint(datasetId), uint(sampleId), patchRequest)
+	sample, sampleErr := a.SamplesHandler.PatchSample(uint(datasetId), uint(sampleId), patchRequest)
 	if sampleErr != nil {
 		fmt.Println(sampleErr)
 		w.WriteHeader(http.StatusBadRequest)
