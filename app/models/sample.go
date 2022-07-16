@@ -27,15 +27,6 @@ func (st StatusType) ToNullString() null.String {
 	return null.StringFrom(string(st))
 }
 
-//func (r *StatusType) Scan(value interface{}) error {
-//	*r = StatusType(value.([]byte))
-//	return nil
-//}
-//
-//func (r StatusType) Value() (driver.Value, error) {
-//	return string(r), nil
-//}
-
 type Sample struct {
 	gorm.Model
 	DatasetID   uint           `json:"dataset_id"`
@@ -43,5 +34,5 @@ type Sample struct {
 	Metadata    datatypes.JSON `json:"metadata"`
 	Status      null.String    `json:"status"`
 	Text        string         `json:"text"`
-	AssignedTo  null.Int
+	AssignedTo  null.Int       `json:"assigned_to"`
 }

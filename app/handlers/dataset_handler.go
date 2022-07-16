@@ -71,7 +71,7 @@ func (s *DatasetHandler) getDatasetsStats(dataset *models.Dataset) *DatasetStats
 
 	stats.TotalSamples = s.DB.Model(dataset).Association("Samples").Count()
 	stats.CompletedSamples = s.DB.Model(dataset).Where("status IN ?", completed).Association("Samples").Count()
-	stats.PendingSamples = s.DB.Model(dataset).Where("assigned_to IS NULL").Association("Samples").Count()
+	stats.PendingSamples = s.DB.Model(dataset).Where("status IS NULL AND assigned_to IS NULL").Association("Samples").Count()
 
 	return stats
 }
