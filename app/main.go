@@ -81,7 +81,8 @@ func (a *App) InitializeRoutes() {
 	adminRouter := a.Router.PathPrefix("/admin").Subrouter()
 	adminRouter.Use(a.TokenAuth.AuthTokenMiddleware, middlewares.IsAdminMiddleware)
 
-	adminRouter.HandleFunc("/", a.getAdmin).Methods("GET")
+	adminRouter.HandleFunc("/roles", a.getRoles).Methods("GET")
+	//adminRouter.HandleFunc("/perms", a.getAdmin).Methods("GET")
 
 	datasetsRouter := a.Router.PathPrefix("/datasets").Subrouter()
 	datasetsRouter.Use(a.TokenAuth.AuthTokenMiddleware)
@@ -101,7 +102,7 @@ func (a *App) InitializeRoutes() {
 
 }
 
-func (a *App) getAdmin(w http.ResponseWriter, r *http.Request) {
+func (a *App) getRoles(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	//json.NewEncoder(w).Encode(loginResponse.User)
 }
