@@ -14,5 +14,5 @@ type User struct {
 	Email    string    `gorm:"unique" json:"email"`
 	Password string    `json:"-"`
 	Role     UserRole  `gorm:"default:annotator" json:"role"`
-	Datasets []Dataset `gorm:"many2many:user_datasets"`
+	Datasets []Dataset `gorm:"many2many:user_datasets" json:"-"`
 }
