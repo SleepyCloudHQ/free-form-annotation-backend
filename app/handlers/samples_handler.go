@@ -14,17 +14,17 @@ type PatchSampleRequest struct {
 	Metadata    datatypes.JSON    `json:"metadata"`
 }
 
-type SampleHandler struct {
+type SamplesHandler struct {
 	DB *gorm.DB
 }
 
-func NewSampleHandler(db *gorm.DB) *SampleHandler {
-	return &SampleHandler{
+func NewSamplesHandler(db *gorm.DB) *SamplesHandler {
+	return &SamplesHandler{
 		DB: db,
 	}
 }
 
-func (s *SampleHandler) GetSamples(datasetId uint) (*[]models.Sample, error) {
+func (s *SamplesHandler) GetSamples(datasetId uint) (*[]models.Sample, error) {
 	var samples []models.Sample
 	if dbErr := s.DB.Where("dataset_id = ?", datasetId).Find(&samples).Error; dbErr != nil {
 		return nil, dbErr
@@ -33,7 +33,7 @@ func (s *SampleHandler) GetSamples(datasetId uint) (*[]models.Sample, error) {
 	return &samples, nil
 }
 
-func (s *SampleHandler) GetSamplesWithStatus(datasetId uint, status models.StatusType) (*[]models.Sample, error) {
+func (s *SamplesHandler) GetSamplesWithStatus(datasetId uint, status models.StatusType) (*[]models.Sample, error) {
 	var samples []models.Sample
 	if dbErr := s.DB.Where("dataset_id = ? AND status = ?", datasetId, status).Find(&samples).Error; dbErr != nil {
 		return nil, dbErr
@@ -42,7 +42,7 @@ func (s *SampleHandler) GetSamplesWithStatus(datasetId uint, status models.Statu
 	return &samples, nil
 }
 
-func (s *SampleHandler) GetSample(datasetId uint, sampleId uint) (*models.Sample, error) {
+func (s *SamplesHandler) GetSample(datasetId uint, sampleId uint) (*models.Sample, error) {
 	sample := &models.Sample{}
 
 	if dbErr := s.DB.Where("dataset_id = ?", datasetId).First(&sample, sampleId).Error; dbErr != nil {
@@ -52,7 +52,7 @@ func (s *SampleHandler) GetSample(datasetId uint, sampleId uint) (*models.Sample
 	return sample, nil
 }
 
-func (s *SampleHandler) PatchSample(datasetId uint, sampleId uint, patchRequest *PatchSampleRequest) (*models.Sample, error) {
+func (s *SamplesHandler) PatchSample(datasetId uint, sampleId uint, patchRequest *PatchSampleRequest) (*models.Sample, error) {
 	sample := &models.Sample{}
 	updateData := models.Sample{Annotations: patchRequest.Annotations, Metadata: patchRequest.Metadata, Status: patchRequest.Status.ToNullString()}
 	if dbErr := s.DB.Where("dataset_id = ?", datasetId).First(&sample, sampleId).Updates(updateData).Error; dbErr != nil {
@@ -62,7 +62,7 @@ func (s *SampleHandler) PatchSample(datasetId uint, sampleId uint, patchRequest 
 	return sample, nil
 }
 
-func (s *SampleHandler) findUnassignedSample(datasetId uint) (*models.Sample, error) {
+func (s *SamplesHandler) findUnassignedSample(datasetId uint) (*models.Sample, error) {
 	sample := &models.Sample{}
 	if dbErr := s.DB.Where("status IS NULL AND dataset_id = ? AND assigned_to IS NULL", datasetId).First(&sample).Error; dbErr != nil {
 		return nil, dbErr
@@ -71,7 +71,7 @@ func (s *SampleHandler) findUnassignedSample(datasetId uint) (*models.Sample, er
 	return sample, nil
 }
 
-func (s *SampleHandler) findAssignedSample(datasetId uint, userId uint) (*models.Sample, error) {
+func (s *SamplesHandler) findAssignedSample(datasetId uint, userId uint) (*models.Sample, error) {
 	sample := &models.Sample{}
 	if dbErr := s.DB.Where("status IS NULL AND dataset_id = ? AND assigned_to = ?", datasetId, userId).First(&sample).Error; dbErr != nil {
 		return nil, dbErr
@@ -80,7 +80,7 @@ func (s *SampleHandler) findAssignedSample(datasetId uint, userId uint) (*models
 	return sample, nil
 }
 
-func (s *SampleHandler) findAndAssignSample(datasetId uint, userId uint) (*models.Sample, error) {
+func (s *SamplesHandler) findAndAssignSample(datasetId uint, userId uint) (*models.Sample, error) {
 	// find unassigned sample
 	unassignedSample, err := s.findUnassignedSample(datasetId)
 	if err != nil {
@@ -94,7 +94,7 @@ func (s *SampleHandler) findAndAssignSample(datasetId uint, userId uint) (*model
 	return unassignedSample, nil
 }
 
-func (s *SampleHandler) AssignNextSample(datasetId uint, userId uint) (*models.Sample, error) {
+func (s *SamplesHandler) AssignNextSample(datasetId uint, userId uint) (*models.Sample, error) {
 	// find already assigned sample
 	assignedSample, assignedSampleErr := s.findAssignedSample(datasetId, userId)
 	if assignedSampleErr != nil {
