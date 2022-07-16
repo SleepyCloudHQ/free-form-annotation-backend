@@ -18,14 +18,15 @@ import (
 )
 
 type App struct {
-	Router          *mux.Router
-	DB              *gorm.DB
-	TokenAuth       *auth.TokenAuth
-	UserAuth        *auth.UserAuth
-	AuthHandler     *handlers.AuthHandler
-	DatasetsHandler *handlers.DatasetsHandler
-	SamplesHandler  *handlers.SamplesHandler
-	UsersHandler    *handlers.UsersHandler
+	Router                  *mux.Router
+	DB                      *gorm.DB
+	TokenAuth               *auth.TokenAuth
+	UserAuth                *auth.UserAuth
+	AuthHandler             *handlers.AuthHandler
+	DatasetsHandler         *handlers.DatasetsHandler
+	SamplesHandler          *handlers.SamplesHandler
+	UsersHandler            *handlers.UsersHandler
+	UserDatasetPermsHandler *handlers.UserDatasetPermsHandler
 }
 
 func (a *App) Initialize() {
@@ -51,6 +52,7 @@ func (a *App) Initialize() {
 	a.DatasetsHandler = handlers.NewDatasetsHandler(db)
 	a.SamplesHandler = handlers.NewSamplesHandler(db)
 	a.UsersHandler = handlers.NewUsersHandler(db, validate)
+	a.UserDatasetPermsHandler = handlers.NewUserDatasetPermsHandler(db, validate)
 
 	a.Migrate()
 	a.InitializeRoutes()
@@ -65,7 +67,7 @@ func (a *App) InitializeRoutes() {
 	cors := mux_handlers.CORS(
 		mux_handlers.AllowedHeaders([]string{"content-type"}),
 		mux_handlers.AllowedOrigins([]string{"http://localhost:3000"}),
-		mux_handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PATCH"}),
+		mux_handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PATCH", "DELETE"}),
 		mux_handlers.AllowCredentials(),
 	)
 
@@ -84,8 +86,12 @@ func (a *App) InitializeRoutes() {
 	adminRouter.Use(a.TokenAuth.AuthTokenMiddleware, middlewares.IsAdminMiddleware)
 
 	adminRouter.HandleFunc("/users/", a.getUsers).Methods("GET")
-	adminRouter.HandleFunc("/users/{userId:[0-9]+}/roles/", a.patchUserRole).Methods("PATCH")
-	//adminRouter.HandleFunc("/perms", a.getAdmin).Methods("GET")
+
+	adminUserManagementRouter := adminRouter.PathPrefix("/users/{userId:[0-9]+}").Subrouter()
+	adminUserManagementRouter.Use(middlewares.ParseUserIdMiddleware)
+	adminUserManagementRouter.HandleFunc("/roles/", a.patchUserRole).Methods("PATCH")
+	adminUserManagementRouter.HandleFunc("/dataset-perms/", a.postUserDatasetPerm).Methods("POST")
+	adminUserManagementRouter.HandleFunc("/dataset-perms/", a.deleteUserDatasetPerm).Methods("DELETE")
 
 	datasetsRouter := a.Router.PathPrefix("/datasets").Subrouter()
 	datasetsRouter.Use(a.TokenAuth.AuthTokenMiddleware)
@@ -110,15 +116,7 @@ func (a *App) getUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) patchUserRole(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	userIdString := vars["userId"]
-	userId, userIdErr := strconv.Atoi(userIdString)
-	if userIdErr != nil {
-		fmt.Println("Error converting user id")
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(userIdErr.Error()))
-		return
-	}
+	userId := r.Context().Value(middlewares.UserIdContextKey).(int)
 
 	patchRoleRequest := &handlers.PatchUserRoleRequest{}
 	if err := json.NewDecoder(r.Body).Decode(patchRoleRequest); err != nil {
@@ -138,6 +136,48 @@ func (a *App) patchUserRole(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(user)
+}
+
+func (a *App) postUserDatasetPerm(w http.ResponseWriter, r *http.Request) {
+	userId := r.Context().Value(middlewares.UserIdContextKey).(int)
+	createUserDatasetPermRequest := &handlers.DatasetToUserPermsRequest{}
+	if err := json.NewDecoder(r.Body).Decode(createUserDatasetPermRequest); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+		fmt.Println(err)
+		return
+	}
+
+	createErr := a.UserDatasetPermsHandler.AddDatasetToUserPerms(uint(userId), createUserDatasetPermRequest)
+	if createErr != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(createErr.Error()))
+		fmt.Println(createErr)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (a *App) deleteUserDatasetPerm(w http.ResponseWriter, r *http.Request) {
+	userId := r.Context().Value(middlewares.UserIdContextKey).(int)
+	deleteUserDatasetPermRequest := &handlers.DatasetToUserPermsRequest{}
+	if err := json.NewDecoder(r.Body).Decode(deleteUserDatasetPermRequest); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+		fmt.Println(err)
+		return
+	}
+
+	createErr := a.UserDatasetPermsHandler.DeleteDatasetToUserPerms(uint(userId), deleteUserDatasetPermRequest)
+	if createErr != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(createErr.Error()))
+		fmt.Println(createErr)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (a *App) login(w http.ResponseWriter, r *http.Request) {
