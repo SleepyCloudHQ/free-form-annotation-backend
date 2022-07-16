@@ -1,6 +1,9 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"errors"
+	"gorm.io/gorm"
+)
 
 type UserRole string
 
@@ -8,6 +11,14 @@ const (
 	AdminRole     UserRole = "admin"
 	AnnotatorRole UserRole = "annotator"
 )
+
+func (ur UserRole) IsValid() error {
+	switch ur {
+	case AdminRole, AnnotatorRole:
+		return nil
+	}
+	return errors.New("invalid user role")
+}
 
 type User struct {
 	gorm.Model
