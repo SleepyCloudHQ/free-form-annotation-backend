@@ -249,8 +249,9 @@ func (a *App) getSamplesWithStatus(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) assignNextSample(w http.ResponseWriter, r *http.Request) {
 	datasetId := r.Context().Value(middlewares.DatasetIdContextKey).(int)
+	user := r.Context().Value(auth.UserContextKey).(*models.User)
 
-	sample, sampleErr := a.SampleHandler.AssignNextSample(uint(datasetId))
+	sample, sampleErr := a.SampleHandler.AssignNextSample(uint(datasetId), user.ID)
 	if sampleErr != nil {
 		fmt.Println(sampleErr)
 		w.WriteHeader(http.StatusNotFound)

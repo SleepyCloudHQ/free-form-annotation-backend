@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"gopkg.in/guregu/null.v4"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
@@ -12,16 +13,18 @@ const (
 	Accepted  StatusType = "accepted"
 	Rejected  StatusType = "rejected"
 	Uncertain StatusType = "uncertain"
-	Unvisited StatusType = "unvisited"
-	Assigned  StatusType = "assigned"
 )
 
 func (st StatusType) IsValid() error {
 	switch st {
-	case Accepted, Rejected, Uncertain, Unvisited, Assigned:
+	case Accepted, Rejected, Uncertain:
 		return nil
 	}
 	return errors.New("invalid status type")
+}
+
+func (st StatusType) ToNullString() null.String {
+	return null.StringFrom(string(st))
 }
 
 //func (r *StatusType) Scan(value interface{}) error {
@@ -38,6 +41,7 @@ type Sample struct {
 	DatasetID   uint           `json:"dataset_id"`
 	Annotations datatypes.JSON `json:"annotations"`
 	Metadata    datatypes.JSON `json:"metadata"`
-	Status      StatusType     `gorm:"default:unvisited" json:"status"`
+	Status      null.String    `json:"status"`
 	Text        string         `json:"text"`
+	AssignedTo  null.Int
 }

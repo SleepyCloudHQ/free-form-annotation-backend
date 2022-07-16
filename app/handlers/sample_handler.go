@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"backend/app/models"
+	"errors"
+	"gopkg.in/guregu/null.v4"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
@@ -52,7 +54,7 @@ func (s *SampleHandler) GetSample(datasetId uint, sampleId uint) (*models.Sample
 
 func (s *SampleHandler) PatchSample(datasetId uint, sampleId uint, patchRequest *PatchSampleRequest) (*models.Sample, error) {
 	sample := &models.Sample{}
-	updateData := models.Sample{Annotations: patchRequest.Annotations, Metadata: patchRequest.Metadata, Status: patchRequest.Status}
+	updateData := models.Sample{Annotations: patchRequest.Annotations, Metadata: patchRequest.Metadata, Status: patchRequest.Status.ToNullString()}
 	if dbErr := s.DB.Where("dataset_id = ?", datasetId).First(&sample, sampleId).Updates(updateData).Error; dbErr != nil {
 		return nil, dbErr
 	}
@@ -60,16 +62,49 @@ func (s *SampleHandler) PatchSample(datasetId uint, sampleId uint, patchRequest 
 	return sample, nil
 }
 
-func (s *SampleHandler) AssignNextSample(datasetId uint) (*models.Sample, error) {
+func (s *SampleHandler) findUnassignedSample(datasetId uint) (*models.Sample, error) {
 	sample := &models.Sample{}
-
-	if dbErr := s.DB.Where("status = ? AND dataset_id = ?", models.Unvisited, datasetId).First(&sample).Error; dbErr != nil {
+	if dbErr := s.DB.Where("status IS NULL AND dataset_id = ? AND assigned_to IS NULL", datasetId).First(&sample).Error; dbErr != nil {
 		return nil, dbErr
 	}
 
-	// update status
-	if updateErr := s.DB.Model(&sample).Updates(models.Sample{Status: models.Assigned}).Error; updateErr != nil {
+	return sample, nil
+}
+
+func (s *SampleHandler) findAssignedSample(datasetId uint, userId uint) (*models.Sample, error) {
+	sample := &models.Sample{}
+	if dbErr := s.DB.Where("status IS NULL AND dataset_id = ? AND assigned_to = ?", datasetId, userId).First(&sample).Error; dbErr != nil {
+		return nil, dbErr
+	}
+
+	return sample, nil
+}
+
+func (s *SampleHandler) findAndAssignSample(datasetId uint, userId uint) (*models.Sample, error) {
+	// find unassigned sample
+	unassignedSample, err := s.findUnassignedSample(datasetId)
+	if err != nil {
+		return nil, err
+	}
+
+	// assign the sample to the user
+	if updateErr := s.DB.Model(&unassignedSample).Updates(models.Sample{AssignedTo: null.IntFrom(int64(userId))}).Error; updateErr != nil {
 		return nil, updateErr
 	}
-	return sample, nil
+	return unassignedSample, nil
+}
+
+func (s *SampleHandler) AssignNextSample(datasetId uint, userId uint) (*models.Sample, error) {
+	// find already assigned sample
+	assignedSample, assignedSampleErr := s.findAssignedSample(datasetId, userId)
+	if assignedSampleErr != nil {
+		if errors.Is(assignedSampleErr, gorm.ErrRecordNotFound) {
+			// if there isn't an already assigned sample then assign a new one
+			return s.findAndAssignSample(datasetId, userId)
+		} else {
+			return nil, assignedSampleErr
+		}
+	}
+
+	return assignedSample, nil
 }

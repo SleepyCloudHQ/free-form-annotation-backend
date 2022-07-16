@@ -7,6 +7,7 @@ require (
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	golang.org/x/crypto v0.0.0-20220214200702-86341886e292
+	gopkg.in/guregu/null.v4 v4.0.0
 	gorm.io/datatypes v1.0.6
 	gorm.io/driver/sqlite v1.3.4
 	gorm.io/gorm v1.23.6
