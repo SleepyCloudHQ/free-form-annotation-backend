@@ -161,7 +161,20 @@ func (a *App) getUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) getDatasets(w http.ResponseWriter, r *http.Request) {
-	datasets := a.DatasetHandler.GetDatasets()
+	user := r.Context().Value(auth.UserContextKey).(*models.User)
+
+	var datasets *[]handlers.DatasetData
+	if user.Role == models.AdminRole {
+		datasets = a.DatasetHandler.GetDatasets()
+	} else {
+		var datasetsErr error
+		datasets, datasetsErr = a.DatasetHandler.GetDatasetsForUser(user)
+		if datasetsErr != nil {
+			fmt.Println(datasetsErr)
+			return
+		}
+	}
+
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(datasets)
 }
