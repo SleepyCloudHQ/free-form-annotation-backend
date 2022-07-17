@@ -92,7 +92,7 @@ func (a *App) InitializeRoutes() {
 	adminUserManagementRouter.Use(middlewares.ParseUserIdMiddleware)
 	adminUserManagementRouter.HandleFunc("/roles/", a.patchUserRole).Methods("PATCH", "OPTIONS")
 	adminUserManagementRouter.HandleFunc("/dataset-perms/", a.postUserDatasetPerm).Methods("POST")
-	adminUserManagementRouter.HandleFunc("/dataset-perms/", a.deleteUserDatasetPerm).Methods("DELETE")
+	adminUserManagementRouter.HandleFunc("/dataset-perms/", a.deleteUserDatasetPerm).Methods("DELETE", "OPTIONS")
 
 	datasetsRouter := a.Router.PathPrefix("/datasets").Subrouter()
 	datasetsRouter.Use(a.TokenAuth.AuthTokenMiddleware)
