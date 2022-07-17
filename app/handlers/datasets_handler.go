@@ -13,7 +13,7 @@ type DatasetStats struct {
 }
 
 type DatasetData struct {
-	ID        uint               `json:"id"`
+	ID        uint
 	Name      string             `json:"name"`
 	Type      models.DatasetType `json:"type"`
 	CreatedAt time.Time          `json:"created_at"`

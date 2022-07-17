@@ -28,6 +28,12 @@ func (u *UsersHandler) GetUsers() *[]models.User {
 	return &users
 }
 
+func (u *UsersHandler) GetUsersWithDatasets() *[]models.User {
+	var users []models.User
+	u.DB.Preload("Datasets").Find(&users)
+	return &users
+}
+
 func (u *UsersHandler) PatchUserRole(userId uint, request *PatchUserRoleRequest) (*models.User, error) {
 	if valErr := u.Validator.Struct(request); valErr != nil {
 		return nil, valErr.(validator.ValidationErrors)

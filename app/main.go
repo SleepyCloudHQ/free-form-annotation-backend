@@ -7,14 +7,15 @@ import (
 	"backend/app/models"
 	"encoding/json"
 	"fmt"
+	"log"
+	"net/http"
+	"strconv"
+
 	"github.com/go-playground/validator/v10"
 	mux_handlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"log"
-	"net/http"
-	"strconv"
 )
 
 type App struct {
@@ -89,7 +90,7 @@ func (a *App) InitializeRoutes() {
 
 	adminUserManagementRouter := adminRouter.PathPrefix("/users/{userId:[0-9]+}").Subrouter()
 	adminUserManagementRouter.Use(middlewares.ParseUserIdMiddleware)
-	adminUserManagementRouter.HandleFunc("/roles/", a.patchUserRole).Methods("PATCH")
+	adminUserManagementRouter.HandleFunc("/roles/", a.patchUserRole).Methods("PATCH", "OPTIONS")
 	adminUserManagementRouter.HandleFunc("/dataset-perms/", a.postUserDatasetPerm).Methods("POST")
 	adminUserManagementRouter.HandleFunc("/dataset-perms/", a.deleteUserDatasetPerm).Methods("DELETE")
 
@@ -112,7 +113,7 @@ func (a *App) InitializeRoutes() {
 
 func (a *App) getUsers(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(a.UsersHandler.GetUsers())
+	json.NewEncoder(w).Encode(a.UsersHandler.GetUsersWithDatasets())
 }
 
 func (a *App) patchUserRole(w http.ResponseWriter, r *http.Request) {
