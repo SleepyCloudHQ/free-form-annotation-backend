@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"backend/app/models"
-	"gorm.io/gorm"
 	"time"
+
+	"gorm.io/datatypes"
+	"gorm.io/gorm"
 )
 
 type DatasetStats struct {
@@ -17,6 +19,7 @@ type DatasetData struct {
 	Name      string             `json:"name"`
 	Type      models.DatasetType `json:"type"`
 	CreatedAt time.Time          `json:"created_at"`
+	Metadata  datatypes.JSON     `json:"metadata"`
 	Stats     *DatasetStats      `json:"stats"`
 }
 
@@ -70,6 +73,7 @@ func (s *DatasetsHandler) mapDatasetToDatasetData(dataset *models.Dataset) *Data
 		Name:      dataset.Name,
 		Type:      dataset.Type,
 		CreatedAt: dataset.CreatedAt,
+		Metadata:  dataset.Metadata,
 		Stats:     s.getDatasetsStats(dataset),
 	}
 }
