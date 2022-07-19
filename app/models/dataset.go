@@ -1,6 +1,7 @@
 package models
 
 import (
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -13,7 +14,8 @@ const (
 
 type Dataset struct {
 	gorm.Model
-	Name    string      `gorm:"not null;" json:"name"`
-	Samples []Sample    `json:"samples"`
-	Type    DatasetType `gorm:"not null" json:"type"`
+	Name     string         `gorm:"not null;" json:"name"`
+	Samples  []Sample       `json:"samples"`
+	Type     DatasetType    `gorm:"not null" json:"type"`
+	Metadata datatypes.JSON `json:"metadata"`
 }
