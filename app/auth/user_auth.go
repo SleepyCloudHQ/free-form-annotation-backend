@@ -14,13 +14,13 @@ func NewUserAuth(db *gorm.DB) *UserAuth {
 	return &UserAuth{DB: db}
 }
 
-func (a *UserAuth) CreateUser(email string, password string) (*models.User, error) {
+func (a *UserAuth) CreateUser(email string, password string, role models.UserRole) (*models.User, error) {
 	hashedPassword, hashErr := bcrypt.GenerateFromPassword([]byte(password), 8)
 	if hashErr != nil {
 		return nil, hashErr
 	}
 
-	user := &models.User{Email: email, Password: string(hashedPassword)}
+	user := &models.User{Email: email, Password: string(hashedPassword), Role: role}
 	result := a.DB.Create(user)
 	if result.Error != nil {
 		return nil, result.Error

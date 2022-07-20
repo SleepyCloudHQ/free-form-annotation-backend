@@ -58,7 +58,7 @@ func (a *AuthHandler) Register(registerRequest *RegisterRequest) (*LoginResponse
 	if valErr := a.Validator.Struct(registerRequest); valErr != nil {
 		return nil, valErr.(validator.ValidationErrors)
 	}
-	user, userErr := a.UserAuth.CreateUser(registerRequest.Email, registerRequest.Password)
+	user, userErr := a.UserAuth.CreateUser(registerRequest.Email, registerRequest.Password, models.AnnotatorRole)
 	if userErr != nil {
 		return nil, userErr
 	}

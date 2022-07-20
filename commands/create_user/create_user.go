@@ -2,19 +2,40 @@ package main
 
 import (
 	"backend/app/auth"
+	"backend/app/models"
+	"flag"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"log"
 )
 
 func main() {
+	email := flag.String("u", "", "user's email")
+	pass := flag.String("p", "", "user's password")
+	isAdmin := flag.Bool("admin", false, "user should be an admin")
+	flag.Parse()
+
+	if *email == "" {
+		log.Fatal("Please provide user's email")
+	}
+
+	if *pass == "" {
+		log.Fatal("Please provide user's password")
+	}
+
 	db, err := gorm.Open(sqlite.Open("../../test.db"))
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	userAuth := auth.NewUserAuth(db)
-	if _, userErr := userAuth.CreateUser("test@test.com", "password"); err != nil {
+
+	role := models.AnnotatorRole
+	if *isAdmin {
+		role = models.AdminRole
+	}
+
+	if _, userErr := userAuth.CreateUser(*email, *pass, role); err != nil {
 		log.Fatal(userErr)
 	}
 
