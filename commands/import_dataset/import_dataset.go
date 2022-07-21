@@ -10,6 +10,8 @@ import (
 
 	"gopkg.in/guregu/null.v4"
 	"gorm.io/datatypes"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 type Entity struct {
@@ -21,10 +23,10 @@ type Entity struct {
 }
 
 type Relationship struct {
-	Id      uint `json:"id"`
-	Entity1 uint `json:"entity1"`
-	Entity2 uint `json:"entity2"`
-	Name    uint `json:"Name"`
+	Id      uint   `json:"id"`
+	Entity1 uint   `json:"entity1"`
+	Entity2 uint   `json:"entity2"`
+	Name    string `json:"Name"`
 }
 
 type AnnotationData struct {
@@ -72,18 +74,29 @@ func main() {
 		log.Fatal(parsingErr)
 	}
 
-	samples := make([]*models.Sample, len(samplesData))
-	for i, d := range samplesData {
-		samples[i] = mapSampleDataToSample(&d, 1)
+	db, dbErr := gorm.Open(sqlite.Open("../../test.db"))
+	if dbErr != nil {
+		log.Fatal(dbErr)
 	}
 
-	for _, s := range samples {
-		fmt.Println(s)
+	// create dataset
+	dataset := &models.Dataset{
+		Name: *datasetName,
 	}
-	//	dataset = &models.Dataset{
-	//		Name:    *datasetName,
-	//		Samples: samples,
-	//	}
+
+	if datasetCreateErr := db.Create(&dataset).Error; datasetCreateErr != nil {
+		log.Fatal(datasetCreateErr)
+	}
+
+	samples := make([]*models.Sample, len(samplesData))
+	for i, d := range samplesData {
+		samples[i] = mapSampleDataToSample(&d, dataset.ID)
+	}
+
+	// create samples in a batch
+	if sampleCreateErr := db.Create(&samples).Error; sampleCreateErr != nil {
+		log.Fatal(sampleCreateErr)
+	}
 
 	fmt.Println("Dataset created!")
 }
