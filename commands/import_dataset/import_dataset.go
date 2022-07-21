@@ -26,7 +26,7 @@ type Relationship struct {
 	Id      uint   `json:"id"`
 	Entity1 uint   `json:"entity1"`
 	Entity2 uint   `json:"entity2"`
-	Name    string `json:"Name"`
+	Name    string `json:"name"`
 }
 
 type AnnotationData struct {
