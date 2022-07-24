@@ -35,7 +35,7 @@ func main() {
 	flag.Parse()
 
 	if *datasetId < 0 {
-		log.Fatal("Inavlid dataset id")
+		log.Fatal("Invalid dataset id")
 	}
 
 	if *outputFilePath == "" {
