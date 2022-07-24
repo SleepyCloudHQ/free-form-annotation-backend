@@ -10,7 +10,9 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
+	"github.com/go-co-op/gocron"
 	"github.com/go-playground/validator/v10"
 	mux_handlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -395,8 +397,16 @@ func (a *App) Run() {
 	log.Fatal(http.ListenAndServe("localhost:8010", logRequest(a.Router)))
 }
 
+func checkLicence() {
+	fmt.Println("checking licence")
+	//os.Exit(1)
+}
+
 func main() {
 	fmt.Println("Starting")
+	s := gocron.NewScheduler(time.UTC)
+	s.Every(5).Seconds().Do(checkLicence)
+	s.StartAsync()
 
 	a := App{}
 	a.Initialize()
