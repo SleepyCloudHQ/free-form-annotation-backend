@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/go-co-op/gocron v1.15.1
 	github.com/go-playground/validator/v10 v10.11.0
+	github.com/golang-jwt/jwt/v4 v4.4.2
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	golang.org/x/crypto v0.0.0-20220214200702-86341886e292
@@ -15,6 +16,7 @@ require (
 )
 
 require (
+	github.com/IgorPidik/go-jwt-licence v0.1.3 // indirect
 	github.com/felixge/httpsnoop v1.0.1 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect

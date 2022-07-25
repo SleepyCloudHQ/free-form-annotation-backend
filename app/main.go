@@ -3,12 +3,14 @@ package main
 import (
 	"backend/app/auth"
 	"backend/app/handlers"
+	licence_checker "backend/app/licence"
 	"backend/app/middlewares"
 	"backend/app/models"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -397,15 +399,28 @@ func (a *App) Run() {
 	log.Fatal(http.ListenAndServe("localhost:8010", logRequest(a.Router)))
 }
 
-func checkLicence() {
-	fmt.Println("checking licence")
-	//os.Exit(1)
+func checkLicence(lc *licence_checker.LicenceChecker) func() {
+	return func() {
+		fmt.Println("checking licence")
+		licenceData, licenceErr := lc.CheckLicence()
+		if licenceErr != nil {
+			log.Fatal(licenceErr)
+			os.Exit(1)
+		}
+
+		log.Println(licenceData)
+	}
 }
 
 func main() {
+	licenceChecker, licenceCheckerErr := licence_checker.NewLicenceChecker("../licence-generator/tt.txt")
+	if licenceCheckerErr != nil {
+		log.Fatal(licenceCheckerErr)
+	}
+
 	fmt.Println("Starting")
 	s := gocron.NewScheduler(time.UTC)
-	s.Every(5).Seconds().Do(checkLicence)
+	s.Every(5).Seconds().Do(checkLicence(licenceChecker))
 	s.StartAsync()
 
 	a := App{}
