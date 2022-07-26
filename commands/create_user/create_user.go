@@ -3,9 +3,8 @@ package main
 import (
 	"backend/app/auth"
 	"backend/app/models"
+	"backend/app/utils"
 	"flag"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 	"log"
 )
 
@@ -23,7 +22,7 @@ func main() {
 		log.Fatal("Please provide user's password")
 	}
 
-	db, err := gorm.Open(sqlite.Open("../../test.db"))
+	db, err := utils.Init_db()
 	if err != nil {
 		log.Fatal(err)
 	}

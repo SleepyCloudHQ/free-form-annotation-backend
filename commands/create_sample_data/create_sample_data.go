@@ -2,15 +2,15 @@ package main
 
 import (
 	"backend/app/models"
+	"backend/app/utils"
 	"fmt"
-	"gorm.io/datatypes"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 	"log"
+
+	"gorm.io/datatypes"
 )
 
 func main() {
-	db, err := gorm.Open(sqlite.Open("../../test.db"))
+	db, err := utils.Init_db()
 	if err != nil {
 		log.Fatal(err)
 	}
