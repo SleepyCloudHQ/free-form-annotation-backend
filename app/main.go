@@ -401,26 +401,31 @@ func (a *App) Run() {
 
 func checkLicence(lc *licence_checker.LicenceChecker) func() {
 	return func() {
-		fmt.Println("checking licence")
+		log.Println("Checking licence")
 		licenceData, licenceErr := lc.CheckLicence()
 		if licenceErr != nil {
 			log.Fatal(licenceErr)
 			os.Exit(1)
 		}
 
-		log.Println(licenceData)
+		log.Printf("Licence for %s issued by %s is valid until %s.\n", licenceData.Subject, licenceData.Issuer, licenceData.ExpiresAt.String())
 	}
 }
 
 func main() {
-	licenceChecker, licenceCheckerErr := licence_checker.NewLicenceChecker("../licence-generator/tt.txt")
+	licenceFilePath := os.Getenv("LICENCE_FILE_PATH")
+	if licenceFilePath == "" {
+		licenceFilePath = "../licence-generator/tt.txt"
+	}
+
+	licenceChecker, licenceCheckerErr := licence_checker.NewLicenceChecker(licenceFilePath)
 	if licenceCheckerErr != nil {
 		log.Fatal(licenceCheckerErr)
 	}
 
 	fmt.Println("Starting")
 	s := gocron.NewScheduler(time.UTC)
-	s.Every(5).Seconds().Do(checkLicence(licenceChecker))
+	s.Every(1).Day().Do(checkLicence(licenceChecker))
 	s.StartAsync()
 
 	a := App{}
