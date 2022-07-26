@@ -3,14 +3,18 @@ package main
 import (
 	"backend/app/auth"
 	"backend/app/handlers"
+	licence_checker "backend/app/licence"
 	"backend/app/middlewares"
 	"backend/app/models"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
+	"time"
 
+	"github.com/go-co-op/gocron"
 	"github.com/go-playground/validator/v10"
 	mux_handlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -395,8 +399,34 @@ func (a *App) Run() {
 	log.Fatal(http.ListenAndServe("localhost:8010", logRequest(a.Router)))
 }
 
+func checkLicence(lc *licence_checker.LicenceChecker) func() {
+	return func() {
+		log.Println("Checking licence")
+		licenceData, licenceErr := lc.CheckLicence()
+		if licenceErr != nil {
+			log.Fatal(licenceErr)
+			os.Exit(1)
+		}
+
+		log.Printf("Licence for %s issued by %s is valid until %s.\n", licenceData.Subject, licenceData.Issuer, licenceData.ExpiresAt.String())
+	}
+}
+
 func main() {
+	licenceFilePath := os.Getenv("LICENCE_FILE_PATH")
+	if licenceFilePath == "" {
+		licenceFilePath = "../licence-generator/tt.txt"
+	}
+
+	licenceChecker, licenceCheckerErr := licence_checker.NewLicenceChecker(licenceFilePath)
+	if licenceCheckerErr != nil {
+		log.Fatal(licenceCheckerErr)
+	}
+
 	fmt.Println("Starting")
+	s := gocron.NewScheduler(time.UTC)
+	s.Every(1).Day().Do(checkLicence(licenceChecker))
+	s.StartAsync()
 
 	a := App{}
 	a.Initialize()
