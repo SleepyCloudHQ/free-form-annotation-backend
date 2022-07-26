@@ -2,6 +2,7 @@ package main
 
 import (
 	"backend/app/models"
+	"backend/app/utils"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -124,7 +125,7 @@ func main() {
 		log.Fatal(samplesDataErr)
 	}
 
-	db, dbErr := gorm.Open(sqlite.Open("../../test.db"))
+	db, dbErr := utils.Init_db()
 	if dbErr != nil {
 		log.Fatal(dbErr)
 	}

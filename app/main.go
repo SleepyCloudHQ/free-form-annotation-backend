@@ -14,11 +14,12 @@ import (
 	"strconv"
 	"time"
 
+	"backend/app/utils"
 	"github.com/go-co-op/gocron"
 	"github.com/go-playground/validator/v10"
 	mux_handlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	"gorm.io/driver/sqlite"
+	"github.com/joho/godotenv"
 	"gorm.io/gorm"
 )
 
@@ -35,7 +36,8 @@ type App struct {
 }
 
 func (a *App) Initialize() {
-	db, err := gorm.Open(sqlite.Open("test.db"))
+	godotenv.Load()
+	db, err := utils.Init_db()
 
 	if err != nil {
 		log.Fatal(err)

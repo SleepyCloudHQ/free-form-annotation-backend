@@ -3,6 +3,7 @@ package main
 import (
 	"backend/app/handlers"
 	"backend/app/models"
+	"backend/app/utils"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -42,7 +43,7 @@ func main() {
 		log.Fatal("Invalid output file")
 	}
 
-	db, err := gorm.Open(sqlite.Open("../../test.db"))
+	db, err := utils.Init_db()
 	if err != nil {
 		log.Fatal(err)
 	}
