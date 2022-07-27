@@ -15,6 +15,8 @@ import (
 	"time"
 
 	"backend/app/utils"
+	"github.com/getsentry/sentry-go"
+	sentryhttp "github.com/getsentry/sentry-go/http"
 	"github.com/go-co-op/gocron"
 	"github.com/go-playground/validator/v10"
 	mux_handlers "github.com/gorilla/handlers"
@@ -36,7 +38,6 @@ type App struct {
 }
 
 func (a *App) Initialize() {
-	godotenv.Load()
 	db, err := utils.Init_db()
 
 	if err != nil {
@@ -78,7 +79,10 @@ func (a *App) InitializeRoutes() {
 		mux_handlers.AllowCredentials(),
 	)
 
-	a.Router.Use(cors, middlewares.JSONResponseMiddleware)
+	recoverHandler := mux_handlers.RecoveryHandler()
+	sentryHandler := sentryhttp.New(sentryhttp.Options{Repanic: true})
+
+	a.Router.Use(recoverHandler, sentryHandler.Handle, cors, middlewares.JSONResponseMiddleware)
 
 	authRouter := a.Router.PathPrefix("/auth").Subrouter()
 	authRouter.HandleFunc("/login/", a.login).Methods("POST", "OPTIONS")
@@ -415,17 +419,23 @@ func checkLicence(lc *licence_checker.LicenceChecker) func() {
 }
 
 func main() {
+	log.Println("Starting")
+
+	godotenv.Load()
 	licenceFilePath := os.Getenv("LICENCE_FILE_PATH")
-	if licenceFilePath == "" {
-		licenceFilePath = "../licence-generator/tt.txt"
-	}
 
 	licenceChecker, licenceCheckerErr := licence_checker.NewLicenceChecker(licenceFilePath)
 	if licenceCheckerErr != nil {
 		log.Fatal(licenceCheckerErr)
 	}
 
-	fmt.Println("Starting")
+	if err := sentry.Init(sentry.ClientOptions{
+		Dsn:              os.Getenv("SENTRY_DNS"),
+		TracesSampleRate: 1.0,
+	}); err != nil {
+		log.Fatalf("Sentry initialization failed: %v\n", err)
+	}
+
 	s := gocron.NewScheduler(time.UTC)
 	s.Every(1).Day().Do(checkLicence(licenceChecker))
 	s.StartAsync()
