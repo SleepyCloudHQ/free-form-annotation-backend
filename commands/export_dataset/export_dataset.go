@@ -12,8 +12,6 @@ import (
 
 	"gopkg.in/guregu/null.v4"
 	"gorm.io/datatypes"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 )
 
 type SampleData struct {
