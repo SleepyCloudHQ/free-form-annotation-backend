@@ -62,13 +62,7 @@ func (a *App) Initialize() {
 	a.UsersHandler = handlers.NewUsersHandler(db, validate)
 	a.UserDatasetPermsHandler = handlers.NewUserDatasetPermsHandler(db, validate)
 
-	a.Migrate()
 	a.InitializeRoutes()
-}
-
-func (a *App) Migrate() {
-	//a.DB.AutoMigrate(&models.Dataset{})
-	//a.DB.AutoMigrate(&models.Sample{})
 }
 
 func (a *App) InitializeRoutes() {
