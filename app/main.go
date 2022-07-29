@@ -68,7 +68,7 @@ func (a *App) Initialize() {
 func (a *App) InitializeRoutes() {
 	cors := mux_handlers.CORS(
 		mux_handlers.AllowedHeaders([]string{"content-type"}),
-		mux_handlers.AllowedOrigins([]string{"http://localhost:3000"}),
+		mux_handlers.AllowedOrigins([]string{os.Getenv("ALLOWED_ORIGIN")}),
 		mux_handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PATCH", "DELETE"}),
 		mux_handlers.AllowCredentials(),
 	)
@@ -396,7 +396,7 @@ func logRequest(handler http.Handler) http.Handler {
 }
 
 func (a *App) Run() {
-	log.Fatal(http.ListenAndServe("localhost:8010", logRequest(a.Router)))
+	log.Fatal(http.ListenAndServe(":8010", logRequest(a.Router)))
 }
 
 func checkLicence(lc *licence_checker.LicenceChecker) func() {

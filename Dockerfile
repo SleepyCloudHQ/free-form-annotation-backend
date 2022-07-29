@@ -16,4 +16,5 @@ FROM alpine:latest
 RUN apk --no-cache add ca-certificates
 WORKDIR /root/
 COPY --from=builder /go/src/free-form-annotation-backend/build/. ./
+EXPOSE 8010
 CMD ["./backend_app"]
