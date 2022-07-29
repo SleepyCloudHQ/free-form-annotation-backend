@@ -11,6 +11,14 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	sqlDB, sqlErr := db.DB()
+	if sqlErr != nil {
+		log.Fatal(sqlErr)
+	}
+
+	defer sqlDB.Close()
+
 	if datasetErr := db.AutoMigrate(&models.Dataset{}); datasetErr != nil {
 		log.Fatal(datasetErr)
 		return
@@ -40,4 +48,5 @@ func main() {
 		log.Fatal(migrationErr)
 		return
 	}
+
 }
