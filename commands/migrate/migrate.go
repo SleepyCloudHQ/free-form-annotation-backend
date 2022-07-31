@@ -12,12 +12,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	sqlDB, sqlErr := db.DB()
-	if sqlErr != nil {
-		log.Fatal(sqlErr)
+	if sqlDB, sqlErr := db.DB(); sqlErr == nil {
+		defer sqlDB.Close()
 	}
-
-	defer sqlDB.Close()
 
 	if datasetErr := db.AutoMigrate(&models.Dataset{}); datasetErr != nil {
 		log.Fatal(datasetErr)

@@ -39,7 +39,6 @@ type App struct {
 
 func (a *App) Initialize() {
 	db, err := utils.Init_db()
-
 	if err != nil {
 		log.Fatal(err)
 	}

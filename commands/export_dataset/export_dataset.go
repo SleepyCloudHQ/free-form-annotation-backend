@@ -46,6 +46,10 @@ func main() {
 		log.Fatal(err)
 	}
 
+	if sqlDB, sqlErr := db.DB(); sqlErr == nil {
+		defer sqlDB.Close()
+	}
+
 	sampleHandler := handlers.NewSamplesHandler(db)
 	samples, samplesErr := sampleHandler.GetSamples(uint(*datasetId))
 	if samplesErr != nil {

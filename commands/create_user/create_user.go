@@ -27,6 +27,10 @@ func main() {
 		log.Fatal(err)
 	}
 
+	if sqlDB, sqlErr := db.DB(); sqlErr == nil {
+		defer sqlDB.Close()
+	}
+
 	userAuth := auth.NewUserAuth(db)
 
 	role := models.AnnotatorRole

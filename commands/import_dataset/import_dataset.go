@@ -128,6 +128,10 @@ func main() {
 		log.Fatal(dbErr)
 	}
 
+	if sqlDB, sqlErr := db.DB(); sqlErr == nil {
+		defer sqlDB.Close()
+	}
+
 	// create dataset
 	dataset := &models.Dataset{
 		Name:     *datasetName,
