@@ -148,5 +148,5 @@ func main() {
 		log.Fatal(sampleCreateErr)
 	}
 
-	fmt.Println("Dataset created!")
+	fmt.Printf("Dataset (ID: %d) created!", dataset.ID)
 }
