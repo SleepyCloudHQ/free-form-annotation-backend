@@ -35,7 +35,7 @@ func NewDatasetsHandler(db *gorm.DB) *DatasetsHandler {
 
 func (s *DatasetsHandler) GetDatasets() *[]DatasetData {
 	var datasets []models.Dataset
-	s.DB.Find(&datasets)
+	s.DB.Order("created_at desc").Find(&datasets)
 
 	result := make([]DatasetData, len(datasets))
 	for i, dataset := range datasets {
