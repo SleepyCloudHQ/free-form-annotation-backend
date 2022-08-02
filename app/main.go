@@ -79,19 +79,19 @@ func (a *App) InitializeControllers() {
 
 	authRouter := a.Router.PathPrefix("/auth").Subrouter()
 	authController := controllers.NewAuthController(authRouter, a.TokenAuth, a.UserAuth, a.validate)
-	authController.InitPaths()
+	authController.Init()
 
 	userRouter := a.Router.PathPrefix("/user").Subrouter()
 	usersController := controllers.NewUsersController(userRouter, a.TokenAuth)
-	usersController.InitPaths()
+	usersController.Init()
 
 	adminRouter := a.Router.PathPrefix("/admin").Subrouter()
 	adminController := controllers.NewAdminController(adminRouter, a.TokenAuth, a.UsersHandler, a.UserDatasetPermsHandler)
-	adminController.InitPaths()
+	adminController.Init()
 
 	datasetsRouter := a.Router.PathPrefix("/datasets").Subrouter()
 	datasetsController := controllers.NewDatasetsController(datasetsRouter, a.TokenAuth, a.DatasetsHandler, a.SamplesHandler, a.DB)
-	datasetsController.InitPaths()
+	datasetsController.Init()
 }
 
 func logRequest(handler http.Handler) http.Handler {

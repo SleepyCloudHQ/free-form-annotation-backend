@@ -32,7 +32,7 @@ func NewDatasetsController(router *mux.Router, tokenAuth *auth.TokenAuth, datase
 	}
 }
 
-func (d *DatasetsController) InitPaths() {
+func (d *DatasetsController) Init() {
 	d.router.Use(d.tokenAuth.AuthTokenMiddleware)
 
 	d.router.HandleFunc("/", d.getDatasets).Methods("GET")

@@ -27,7 +27,7 @@ func NewAuthController(router *mux.Router, tokenAuth *auth.TokenAuth, userAuth *
 	return controller
 }
 
-func (a *AuthController) InitPaths() {
+func (a *AuthController) Init() {
 	a.router.HandleFunc("/login/", a.login).Methods("POST", "OPTIONS")
 	a.router.HandleFunc("/refresh-token/", a.refreshToken).Methods("POST")
 	a.router.Handle("/logout/", a.tokenAuth.AuthTokenMiddleware(http.HandlerFunc(a.logout))).Methods("POST")

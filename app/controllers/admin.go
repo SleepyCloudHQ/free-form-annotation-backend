@@ -27,7 +27,7 @@ func NewAdminController(router *mux.Router, tokenAuth *auth.TokenAuth, usersHand
 	}
 }
 
-func (a *AdminController) InitPaths() {
+func (a *AdminController) Init() {
 	a.router.Use(a.tokenAuth.AuthTokenMiddleware, middlewares.IsAdminMiddleware)
 
 	a.router.HandleFunc("/users/", a.getUsers).Methods("GET")
