@@ -12,27 +12,24 @@ import (
 )
 
 type AdminController struct {
-	router                  *mux.Router
 	tokenAuth               *auth.TokenAuth
 	usersHandler            *handlers.UsersHandler
 	userDatasetPermsHandler *handlers.UserDatasetPermsHandler
 }
 
-func NewAdminController(router *mux.Router, tokenAuth *auth.TokenAuth, usersHandler *handlers.UsersHandler, userDatasetPermsHandler *handlers.UserDatasetPermsHandler) *AdminController {
+func NewAdminController(tokenAuth *auth.TokenAuth, usersHandler *handlers.UsersHandler, userDatasetPermsHandler *handlers.UserDatasetPermsHandler) *AdminController {
 	return &AdminController{
-		router:                  router,
 		tokenAuth:               tokenAuth,
 		usersHandler:            usersHandler,
 		userDatasetPermsHandler: userDatasetPermsHandler,
 	}
 }
 
-func (a *AdminController) Init() {
-	a.router.Use(a.tokenAuth.AuthTokenMiddleware, middlewares.IsAdminMiddleware)
+func (a *AdminController) Init(router *mux.Router) {
+	router.Use(a.tokenAuth.AuthTokenMiddleware, middlewares.IsAdminMiddleware)
+	router.HandleFunc("/users/", a.getUsers).Methods("GET")
 
-	a.router.HandleFunc("/users/", a.getUsers).Methods("GET")
-
-	adminUserManagementRouter := a.router.PathPrefix("/users/{userId:[0-9]+}").Subrouter()
+	adminUserManagementRouter := router.PathPrefix("/users/{userId:[0-9]+}").Subrouter()
 	adminUserManagementRouter.Use(middlewares.ParseUserIdMiddleware)
 	adminUserManagementRouter.HandleFunc("/roles/", a.patchUserRole).Methods("PATCH", "OPTIONS")
 	adminUserManagementRouter.HandleFunc("/dataset-perms/", a.postUserDatasetPerm).Methods("POST")

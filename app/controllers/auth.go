@@ -7,30 +7,27 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
 )
 
 type AuthController struct {
-	router      *mux.Router
 	authHandler *handlers.AuthHandler
 	tokenAuth   *auth.TokenAuth
 }
 
-func NewAuthController(router *mux.Router, tokenAuth *auth.TokenAuth, userAuth *auth.UserAuth, validate *validator.Validate) *AuthController {
+func NewAuthController(tokenAuth *auth.TokenAuth, authHandler *handlers.AuthHandler) *AuthController {
 	controller := &AuthController{
-		router:      router,
 		tokenAuth:   tokenAuth,
-		authHandler: handlers.NewAuthHandler(userAuth, tokenAuth, validate),
+		authHandler: authHandler,
 	}
 
 	return controller
 }
 
-func (a *AuthController) Init() {
-	a.router.HandleFunc("/login/", a.login).Methods("POST", "OPTIONS")
-	a.router.HandleFunc("/refresh-token/", a.refreshToken).Methods("POST")
-	a.router.Handle("/logout/", a.tokenAuth.AuthTokenMiddleware(http.HandlerFunc(a.logout))).Methods("POST")
+func (a *AuthController) Init(router *mux.Router) {
+	router.HandleFunc("/login/", a.login).Methods("POST", "OPTIONS")
+	router.HandleFunc("/refresh-token/", a.refreshToken).Methods("POST")
+	router.Handle("/logout/", a.tokenAuth.AuthTokenMiddleware(http.HandlerFunc(a.logout))).Methods("POST")
 }
 
 func (a *AuthController) login(w http.ResponseWriter, r *http.Request) {

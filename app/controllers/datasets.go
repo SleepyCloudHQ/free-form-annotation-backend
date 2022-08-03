@@ -15,16 +15,14 @@ import (
 )
 
 type DatasetsController struct {
-	router          *mux.Router
 	tokenAuth       *auth.TokenAuth
 	datasetsHandler *handlers.DatasetsHandler
 	samplesHandler  *handlers.SamplesHandler
 	db              *gorm.DB
 }
 
-func NewDatasetsController(router *mux.Router, tokenAuth *auth.TokenAuth, datasetsHandler *handlers.DatasetsHandler, samplesHandler *handlers.SamplesHandler, db *gorm.DB) *DatasetsController {
+func NewDatasetsController(tokenAuth *auth.TokenAuth, datasetsHandler *handlers.DatasetsHandler, samplesHandler *handlers.SamplesHandler, db *gorm.DB) *DatasetsController {
 	return &DatasetsController{
-		router:          router,
 		tokenAuth:       tokenAuth,
 		datasetsHandler: datasetsHandler,
 		samplesHandler:  samplesHandler,
@@ -32,12 +30,12 @@ func NewDatasetsController(router *mux.Router, tokenAuth *auth.TokenAuth, datase
 	}
 }
 
-func (d *DatasetsController) Init() {
-	d.router.Use(d.tokenAuth.AuthTokenMiddleware)
+func (d *DatasetsController) Init(router *mux.Router) {
+	router.Use(d.tokenAuth.AuthTokenMiddleware)
 
-	d.router.HandleFunc("/", d.getDatasets).Methods("GET")
+	router.HandleFunc("/", d.getDatasets).Methods("GET")
 
-	datasetRouter := d.router.PathPrefix("/{datasetId:[0-9]+}").Subrouter()
+	datasetRouter := router.PathPrefix("/{datasetId:[0-9]+}").Subrouter()
 	datasetPermsMiddleware := middlewares.GetDatasetPermsMiddleware(d.db)
 	datasetRouter.Use(middlewares.ParseDatasetIdMiddleware, datasetPermsMiddleware)
 

@@ -78,20 +78,20 @@ func (a *App) InitializeControllers() {
 	a.Router.Use(recoverHandler, sentryHandler.Handle, cors, middlewares.JSONResponseMiddleware)
 
 	authRouter := a.Router.PathPrefix("/auth").Subrouter()
-	authController := controllers.NewAuthController(authRouter, a.TokenAuth, a.UserAuth, a.validate)
-	authController.Init()
+	authController := controllers.NewAuthController(a.TokenAuth, a.AuthHandler)
+	authController.Init(authRouter)
 
 	userRouter := a.Router.PathPrefix("/user").Subrouter()
-	usersController := controllers.NewUsersController(userRouter, a.TokenAuth)
-	usersController.Init()
+	usersController := controllers.NewUsersController(a.TokenAuth)
+	usersController.Init(userRouter)
 
 	adminRouter := a.Router.PathPrefix("/admin").Subrouter()
-	adminController := controllers.NewAdminController(adminRouter, a.TokenAuth, a.UsersHandler, a.UserDatasetPermsHandler)
-	adminController.Init()
+	adminController := controllers.NewAdminController(a.TokenAuth, a.UsersHandler, a.UserDatasetPermsHandler)
+	adminController.Init(adminRouter)
 
 	datasetsRouter := a.Router.PathPrefix("/datasets").Subrouter()
-	datasetsController := controllers.NewDatasetsController(datasetsRouter, a.TokenAuth, a.DatasetsHandler, a.SamplesHandler, a.DB)
-	datasetsController.Init()
+	datasetsController := controllers.NewDatasetsController(a.TokenAuth, a.DatasetsHandler, a.SamplesHandler, a.DB)
+	datasetsController.Init(datasetsRouter)
 }
 
 func logRequest(handler http.Handler) http.Handler {
