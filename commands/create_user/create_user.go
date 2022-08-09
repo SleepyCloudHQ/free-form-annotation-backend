@@ -6,9 +6,12 @@ import (
 	"backend/app/utils"
 	"flag"
 	"log"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	godotenv.Load()
 	email := flag.String("u", "", "user's email")
 	pass := flag.String("p", "", "user's password")
 	isAdmin := flag.Bool("admin", false, "user should be an admin")

@@ -4,9 +4,12 @@ import (
 	"backend/app/models"
 	"backend/app/utils"
 	"log"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	godotenv.Load()
 	db, err := utils.Init_db()
 	if err != nil {
 		log.Fatal(err)

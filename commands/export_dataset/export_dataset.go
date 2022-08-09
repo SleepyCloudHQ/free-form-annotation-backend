@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/joho/godotenv"
 	"gopkg.in/guregu/null.v4"
 	"gorm.io/datatypes"
 )
@@ -29,6 +30,8 @@ func mapSampleToSampleData(sample *models.Sample) *SampleData {
 }
 
 func main() {
+	godotenv.Load()
+
 	datasetId := flag.Int("d", -1, "dataset's id")
 	outputFilePath := flag.String("f", "", "output file path")
 	flag.Parse()

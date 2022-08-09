@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/joho/godotenv"
 	"gopkg.in/guregu/null.v4"
 	"gorm.io/datatypes"
 )
@@ -20,6 +21,7 @@ type Entity struct {
 	End   uint        `json:"end"`
 	Tag   null.String `json:"tag"`
 	Notes null.String `json:"notes"`
+	Color null.String `json:"color"`
 }
 
 type Relationship struct {
@@ -99,6 +101,7 @@ func parseTags(inputData string) []string {
 }
 
 func main() {
+	godotenv.Load()
 	datasetName := flag.String("n", "", "dataset's name")
 	samplesFilePath := flag.String("f", "", "samples file path")
 
@@ -148,5 +151,5 @@ func main() {
 		log.Fatal(sampleCreateErr)
 	}
 
-	fmt.Printf("Dataset (ID: %d) created!", dataset.ID)
+	fmt.Printf("Dataset (ID: %d) created!\n", dataset.ID)
 }
