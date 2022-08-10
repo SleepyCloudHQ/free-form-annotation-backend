@@ -12,19 +12,46 @@ import (
 
 	"github.com/joho/godotenv"
 	"gopkg.in/guregu/null.v4"
-	"gorm.io/datatypes"
 )
+
+type Entity struct {
+	Id      uint        `json:"id"`
+	Content string      `json:"content"`
+	Start   uint        `json:"start"`
+	End     uint        `json:"end"`
+	Tag     null.String `json:"tag"`
+	Notes   null.String `json:"notes"`
+	Color   null.String `json:"color"`
+}
+
+type Relationship struct {
+	Id      uint        `json:"id"`
+	Entity1 uint        `json:"entity1"`
+	Entity2 uint        `json:"entity2"`
+	Name    string      `json:"name"`
+	Color   null.String `json:"color"`
+}
+
+type AnnotationData struct {
+	Entities      []Entity       `json:"entities"`
+	Relationships []Relationship `json:"relationships"`
+}
 
 type SampleData struct {
 	Text        string         `json:"text"`
-	Annotations datatypes.JSON `json:"annotations"`
+	Annotations AnnotationData `json:"annotations"`
 	Status      null.String    `json:"status"`
 }
 
 func mapSampleToSampleData(sample *models.Sample) *SampleData {
+	var annotations AnnotationData
+	if parsingErr := json.Unmarshal(sample.Annotations, &annotations); parsingErr != nil {
+		log.Fatal(parsingErr)
+	}
+
 	return &SampleData{
 		Text:        sample.Text,
-		Annotations: sample.Annotations,
+		Annotations: annotations,
 		Status:      sample.Status,
 	}
 }
@@ -64,7 +91,7 @@ func main() {
 		result[i] = mapSampleToSampleData(&s)
 	}
 
-	outputFile, openFileErr := os.OpenFile(*outputFilePath, os.O_CREATE|os.O_WRONLY, os.ModePerm)
+	outputFile, openFileErr := os.Create(*outputFilePath)
 	if openFileErr != nil {
 		log.Fatal(openFileErr)
 	}

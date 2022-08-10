@@ -25,10 +25,11 @@ type Entity struct {
 }
 
 type Relationship struct {
-	Id      uint   `json:"id"`
-	Entity1 uint   `json:"entity1"`
-	Entity2 uint   `json:"entity2"`
-	Name    string `json:"name"`
+	Id      uint        `json:"id"`
+	Entity1 uint        `json:"entity1"`
+	Entity2 uint        `json:"entity2"`
+	Name    string      `json:"name"`
+	Color   null.String `json:"color"`
 }
 
 type AnnotationData struct {
