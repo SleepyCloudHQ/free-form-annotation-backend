@@ -9,19 +9,23 @@ import (
 	"gorm.io/gorm"
 )
 
-func handle_record_not_found(w http.ResponseWriter) {
-	err := &ErrorResponse{
-		ErrorMessage: "Not found",
-	}
+func handleRecordNotFound(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusBadRequest)
-	json.NewEncoder(w).Encode(err)
+	WriteError(errors.New("Not found"), w)
 }
 
-func Handle_common_errors(err error, w http.ResponseWriter) {
+func HandleCommonErrors(err error, w http.ResponseWriter) {
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		handle_record_not_found(w)
+		handleRecordNotFound(w)
 		return
 	}
 
 	log.Panic(err)
+}
+
+func WriteError(err error, w http.ResponseWriter) {
+	errResponse := &ErrorResponse{
+		ErrorMessage: err.Error(),
+	}
+	json.NewEncoder(w).Encode(errResponse)
 }

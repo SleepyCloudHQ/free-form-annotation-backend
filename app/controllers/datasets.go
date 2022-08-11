@@ -58,7 +58,7 @@ func (d *DatasetsController) getDatasets(w http.ResponseWriter, r *http.Request)
 		var datasetsErr error
 		datasets, datasetsErr = d.datasetsHandler.GetDatasetsForUser(user)
 		if datasetsErr != nil {
-			utils.Handle_common_errors(datasetsErr, w)
+			utils.HandleCommonErrors(datasetsErr, w)
 			return
 		}
 	}
@@ -72,7 +72,7 @@ func (d *DatasetsController) getDataset(w http.ResponseWriter, r *http.Request) 
 
 	dataset, datasetErr := d.datasetsHandler.GetDataset(uint(datasetId))
 	if datasetErr != nil {
-		utils.Handle_common_errors(datasetErr, w)
+		utils.HandleCommonErrors(datasetErr, w)
 		return
 	}
 
@@ -85,7 +85,7 @@ func (d *DatasetsController) getSamples(w http.ResponseWriter, r *http.Request) 
 
 	samples, samplesErr := d.samplesHandler.GetSamples(uint(datasetId))
 	if samplesErr != nil {
-		utils.Handle_common_errors(samplesErr, w)
+		utils.HandleCommonErrors(samplesErr, w)
 		return
 	}
 
@@ -107,7 +107,7 @@ func (d *DatasetsController) getSample(w http.ResponseWriter, r *http.Request) {
 
 	sample, sampleErr := d.samplesHandler.GetSample(uint(datasetId), uint(sampleId))
 	if sampleErr != nil {
-		utils.Handle_common_errors(sampleErr, w)
+		utils.HandleCommonErrors(sampleErr, w)
 		return
 	}
 
@@ -130,7 +130,7 @@ func (d *DatasetsController) getSamplesWithStatus(w http.ResponseWriter, r *http
 
 	samples, samplesErr := d.samplesHandler.GetSamplesWithStatus(uint(datasetId), status)
 	if samplesErr != nil {
-		utils.Handle_common_errors(samplesErr, w)
+		utils.HandleCommonErrors(samplesErr, w)
 		return
 	}
 
@@ -144,7 +144,7 @@ func (d *DatasetsController) assignNextSample(w http.ResponseWriter, r *http.Req
 
 	sample, sampleErr := d.samplesHandler.AssignNextSample(uint(datasetId), user.ID)
 	if sampleErr != nil {
-		utils.Handle_common_errors(sampleErr, w)
+		utils.HandleCommonErrors(sampleErr, w)
 		return
 	}
 
@@ -173,7 +173,7 @@ func (d *DatasetsController) patchSample(w http.ResponseWriter, r *http.Request)
 
 	sample, sampleErr := d.samplesHandler.PatchSample(uint(datasetId), uint(sampleId), patchRequest)
 	if sampleErr != nil {
-		utils.Handle_common_errors(sampleErr, w)
+		utils.HandleCommonErrors(sampleErr, w)
 		return
 	}
 

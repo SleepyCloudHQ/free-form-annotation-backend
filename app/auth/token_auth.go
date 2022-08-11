@@ -1,6 +1,7 @@
 package auth
 
 import (
+	utils "backend/app/controllers/utils"
 	"backend/app/models"
 	"context"
 	"crypto/rand"
@@ -92,14 +93,14 @@ func (a *TokenAuth) AuthTokenMiddleware(next http.Handler) http.Handler {
 		cookie, err := r.Cookie(AuthTokenCookieName)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte("Unauthorized"))
+			utils.WriteError(errors.New("Unauthorized"), w)
 			return
 		}
 
 		user, authErr := a.CheckAuthToken(cookie.Value)
 		if authErr != nil {
 			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte("Unauthorized"))
+			utils.WriteError(errors.New("Unauthorized"), w)
 			return
 		}
 

@@ -73,7 +73,7 @@ func (a *AdminController) postUserDatasetPerm(w http.ResponseWriter, r *http.Req
 
 	createErr := a.userDatasetPermsHandler.AddDatasetToUserPerms(uint(userId), createUserDatasetPermRequest)
 	if createErr != nil {
-		utils.Handle_common_errors(createErr, w)
+		utils.HandleCommonErrors(createErr, w)
 		return
 	}
 
@@ -91,7 +91,7 @@ func (a *AdminController) deleteUserDatasetPerm(w http.ResponseWriter, r *http.R
 
 	deleteErr := a.userDatasetPermsHandler.DeleteDatasetToUserPerms(uint(userId), deleteUserDatasetPermRequest)
 	if deleteErr != nil {
-		utils.Handle_common_errors(deleteErr, w)
+		utils.HandleCommonErrors(deleteErr, w)
 		return
 	}
 
