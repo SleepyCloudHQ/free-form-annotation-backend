@@ -2,11 +2,11 @@ package controllers
 
 import (
 	"backend/app/auth"
+	utils "backend/app/controllers/utils"
 	"backend/app/handlers"
 	"backend/app/middlewares"
 	"backend/app/models"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -58,7 +58,7 @@ func (d *DatasetsController) getDatasets(w http.ResponseWriter, r *http.Request)
 		var datasetsErr error
 		datasets, datasetsErr = d.datasetsHandler.GetDatasetsForUser(user)
 		if datasetsErr != nil {
-			fmt.Println(datasetsErr)
+			utils.Handle_common_errors(datasetsErr, w)
 			return
 		}
 	}
@@ -72,9 +72,7 @@ func (d *DatasetsController) getDataset(w http.ResponseWriter, r *http.Request) 
 
 	dataset, datasetErr := d.datasetsHandler.GetDataset(uint(datasetId))
 	if datasetErr != nil {
-		fmt.Println(datasetErr)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(datasetErr.Error()))
+		utils.Handle_common_errors(datasetErr, w)
 		return
 	}
 
@@ -87,9 +85,7 @@ func (d *DatasetsController) getSamples(w http.ResponseWriter, r *http.Request) 
 
 	samples, samplesErr := d.samplesHandler.GetSamples(uint(datasetId))
 	if samplesErr != nil {
-		fmt.Println(samplesErr)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(samplesErr.Error()))
+		utils.Handle_common_errors(samplesErr, w)
 		return
 	}
 
@@ -104,17 +100,14 @@ func (d *DatasetsController) getSample(w http.ResponseWriter, r *http.Request) {
 	sampleIdString := vars["sampleId"]
 	sampleId, err := strconv.Atoi(sampleIdString)
 	if err != nil {
-		fmt.Println("Error converting sample id")
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
+		w.Write([]byte("Error converting sample id"))
 		return
 	}
 
 	sample, sampleErr := d.samplesHandler.GetSample(uint(datasetId), uint(sampleId))
 	if sampleErr != nil {
-		fmt.Println(sampleErr)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(sampleErr.Error()))
+		utils.Handle_common_errors(sampleErr, w)
 		return
 	}
 
@@ -130,17 +123,14 @@ func (d *DatasetsController) getSamplesWithStatus(w http.ResponseWriter, r *http
 	statusString := vars["status"]
 	status := models.StatusType(statusString)
 	if statusErr := status.IsValid(); statusErr != nil {
-		fmt.Println("Invalid status type")
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(statusErr.Error()))
+		w.Write([]byte("Invalid status type"))
 		return
 	}
 
 	samples, samplesErr := d.samplesHandler.GetSamplesWithStatus(uint(datasetId), status)
 	if samplesErr != nil {
-		fmt.Println(samplesErr)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(samplesErr.Error()))
+		utils.Handle_common_errors(samplesErr, w)
 		return
 	}
 
@@ -154,9 +144,7 @@ func (d *DatasetsController) assignNextSample(w http.ResponseWriter, r *http.Req
 
 	sample, sampleErr := d.samplesHandler.AssignNextSample(uint(datasetId), user.ID)
 	if sampleErr != nil {
-		fmt.Println(sampleErr)
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(sampleErr.Error()))
+		utils.Handle_common_errors(sampleErr, w)
 		return
 	}
 
@@ -171,15 +159,13 @@ func (d *DatasetsController) patchSample(w http.ResponseWriter, r *http.Request)
 	sampleIdString := vars["sampleId"]
 	sampleId, err := strconv.Atoi(sampleIdString)
 	if err != nil {
-		fmt.Println("Error converting sample id")
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
+		w.Write([]byte("Error converting sample id"))
 		return
 	}
 
 	patchRequest := &handlers.PatchSampleRequest{}
 	if err := json.NewDecoder(r.Body).Decode(patchRequest); err != nil {
-		fmt.Println(err)
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
 		return
@@ -187,9 +173,7 @@ func (d *DatasetsController) patchSample(w http.ResponseWriter, r *http.Request)
 
 	sample, sampleErr := d.samplesHandler.PatchSample(uint(datasetId), uint(sampleId), patchRequest)
 	if sampleErr != nil {
-		fmt.Println(sampleErr)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(sampleErr.Error()))
+		utils.Handle_common_errors(sampleErr, w)
 		return
 	}
 

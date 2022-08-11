@@ -5,9 +5,9 @@ import (
 	"backend/app/handlers"
 	"backend/app/middlewares"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
+	utils "backend/app/controllers/utils"
 	"github.com/gorilla/mux"
 )
 
@@ -48,7 +48,6 @@ func (a *AdminController) patchUserRole(w http.ResponseWriter, r *http.Request) 
 	if err := json.NewDecoder(r.Body).Decode(patchRoleRequest); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
-		fmt.Println(err)
 		return
 	}
 
@@ -56,7 +55,6 @@ func (a *AdminController) patchUserRole(w http.ResponseWriter, r *http.Request) 
 	if patchErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(patchErr.Error()))
-		fmt.Println(patchErr)
 		return
 	}
 
@@ -70,15 +68,12 @@ func (a *AdminController) postUserDatasetPerm(w http.ResponseWriter, r *http.Req
 	if err := json.NewDecoder(r.Body).Decode(createUserDatasetPermRequest); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
-		fmt.Println(err)
 		return
 	}
 
 	createErr := a.userDatasetPermsHandler.AddDatasetToUserPerms(uint(userId), createUserDatasetPermRequest)
 	if createErr != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(createErr.Error()))
-		fmt.Println(createErr)
+		utils.Handle_common_errors(createErr, w)
 		return
 	}
 
@@ -91,15 +86,12 @@ func (a *AdminController) deleteUserDatasetPerm(w http.ResponseWriter, r *http.R
 	if err := json.NewDecoder(r.Body).Decode(deleteUserDatasetPermRequest); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
-		fmt.Println(err)
 		return
 	}
 
-	createErr := a.userDatasetPermsHandler.DeleteDatasetToUserPerms(uint(userId), deleteUserDatasetPermRequest)
-	if createErr != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(createErr.Error()))
-		fmt.Println(createErr)
+	deleteErr := a.userDatasetPermsHandler.DeleteDatasetToUserPerms(uint(userId), deleteUserDatasetPermRequest)
+	if deleteErr != nil {
+		utils.Handle_common_errors(deleteErr, w)
 		return
 	}
 

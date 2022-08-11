@@ -4,7 +4,7 @@ import (
 	"backend/app/auth"
 	"backend/app/handlers"
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -35,16 +35,15 @@ func (a *AuthController) login(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(loginRequest); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
-		fmt.Println(err)
 		return
 	}
 	loginResponse, loginErr := a.authHandler.Login(loginRequest)
 	if loginErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(loginErr.Error()))
-		fmt.Println(loginErr)
 		return
 	}
+
 	http.SetCookie(w, loginResponse.Cookies.AuthTokenCookie)
 	http.SetCookie(w, loginResponse.Cookies.RefreshTokenCookie)
 	w.WriteHeader(http.StatusOK)
@@ -69,7 +68,7 @@ func (a *AuthController) refreshToken(w http.ResponseWriter, r *http.Request) {
 
 	authCookies, loginErr := a.authHandler.RefreshToken(cookie.Value)
 	if loginErr != nil {
-		fmt.Println(loginErr)
+		log.Panic(loginErr)
 		return
 	}
 
