@@ -2,8 +2,10 @@ package controllers
 
 import (
 	"backend/app/auth"
+	utils "backend/app/controllers/utils"
 	"backend/app/handlers"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 
@@ -34,13 +36,13 @@ func (a *AuthController) login(w http.ResponseWriter, r *http.Request) {
 	loginRequest := &handlers.LoginRequest{}
 	if err := json.NewDecoder(r.Body).Decode(loginRequest); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
+		utils.WriteError(err, w)
 		return
 	}
 	loginResponse, loginErr := a.authHandler.Login(loginRequest)
 	if loginErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(loginErr.Error()))
+		utils.WriteError(loginErr, w)
 		return
 	}
 
@@ -62,7 +64,7 @@ func (a *AuthController) refreshToken(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(auth.RefreshTokenCookieName)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("Unauthorized"))
+		utils.WriteError(errors.New("Unauthorized"), w)
 		return
 	}
 

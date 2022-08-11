@@ -2,7 +2,9 @@ package middlewares
 
 import (
 	"backend/app/auth"
+	utils "backend/app/controllers/utils"
 	"backend/app/models"
+	"errors"
 	"net/http"
 )
 
@@ -13,7 +15,7 @@ func IsAdminMiddleware(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		} else {
 			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte("Unauthorized"))
+			utils.WriteError(errors.New("Unauthorized"), w)
 			return
 		}
 	})

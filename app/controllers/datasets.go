@@ -7,6 +7,7 @@ import (
 	"backend/app/middlewares"
 	"backend/app/models"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -101,7 +102,7 @@ func (d *DatasetsController) getSample(w http.ResponseWriter, r *http.Request) {
 	sampleId, err := strconv.Atoi(sampleIdString)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Error converting sample id"))
+		utils.WriteError(errors.New("Error converting sample id"), w)
 		return
 	}
 
@@ -124,7 +125,7 @@ func (d *DatasetsController) getSamplesWithStatus(w http.ResponseWriter, r *http
 	status := models.StatusType(statusString)
 	if statusErr := status.IsValid(); statusErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Invalid status type"))
+		utils.WriteError(errors.New("Invalid status type"), w)
 		return
 	}
 
@@ -160,14 +161,14 @@ func (d *DatasetsController) patchSample(w http.ResponseWriter, r *http.Request)
 	sampleId, err := strconv.Atoi(sampleIdString)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Error converting sample id"))
+		utils.WriteError(errors.New("Error converting sample id"), w)
 		return
 	}
 
 	patchRequest := &handlers.PatchSampleRequest{}
 	if err := json.NewDecoder(r.Body).Decode(patchRequest); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
+		utils.WriteError(err, w)
 		return
 	}
 

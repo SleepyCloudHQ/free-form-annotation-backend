@@ -47,14 +47,14 @@ func (a *AdminController) patchUserRole(w http.ResponseWriter, r *http.Request) 
 	patchRoleRequest := &handlers.PatchUserRoleRequest{}
 	if err := json.NewDecoder(r.Body).Decode(patchRoleRequest); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
+		utils.WriteError(err, w)
 		return
 	}
 
 	user, patchErr := a.usersHandler.PatchUserRole(uint(userId), patchRoleRequest)
 	if patchErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(patchErr.Error()))
+		utils.WriteError(patchErr, w)
 		return
 	}
 
@@ -67,7 +67,7 @@ func (a *AdminController) postUserDatasetPerm(w http.ResponseWriter, r *http.Req
 	createUserDatasetPermRequest := &handlers.DatasetToUserPermsRequest{}
 	if err := json.NewDecoder(r.Body).Decode(createUserDatasetPermRequest); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
+		utils.WriteError(err, w)
 		return
 	}
 
@@ -85,7 +85,7 @@ func (a *AdminController) deleteUserDatasetPerm(w http.ResponseWriter, r *http.R
 	deleteUserDatasetPermRequest := &handlers.DatasetToUserPermsRequest{}
 	if err := json.NewDecoder(r.Body).Decode(deleteUserDatasetPermRequest); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
+		utils.WriteError(err, w)
 		return
 	}
 

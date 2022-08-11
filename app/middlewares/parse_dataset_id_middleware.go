@@ -1,8 +1,8 @@
 package middlewares
 
 import (
+	utils "backend/app/controllers/utils"
 	"context"
-	"fmt"
 	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
@@ -16,9 +16,8 @@ func ParseDatasetIdMiddleware(next http.Handler) http.Handler {
 		datasetIdString := vars["datasetId"]
 		datasetId, err := strconv.Atoi(datasetIdString)
 		if err != nil {
-			fmt.Println("Error converting dataset id")
 			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
+			utils.WriteError(err, w)
 			return
 		}
 

@@ -2,9 +2,12 @@ package middlewares
 
 import (
 	"backend/app/auth"
+	utils "backend/app/controllers/utils"
 	"backend/app/models"
-	"gorm.io/gorm"
+	"errors"
 	"net/http"
+
+	"gorm.io/gorm"
 )
 
 func GetDatasetPermsMiddleware(db *gorm.DB) func(http.Handler) http.Handler {
@@ -27,7 +30,7 @@ func GetDatasetPermsMiddleware(db *gorm.DB) func(http.Handler) http.Handler {
 
 			if result := db.First(userDataset); result.Error != nil {
 				w.WriteHeader(http.StatusUnauthorized)
-				w.Write([]byte("Unauthorized"))
+				utils.WriteError(errors.New("Unauthorized"), w)
 				return
 			}
 
