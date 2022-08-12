@@ -49,4 +49,5 @@ func main() {
 		return
 	}
 
+	log.Println("Migration successful!")
 }
