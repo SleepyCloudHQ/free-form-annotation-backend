@@ -28,8 +28,8 @@ func NewAuthController(tokenAuth *auth.TokenAuth, authHandler *handlers.AuthHand
 
 func (a *AuthController) Init(router *mux.Router) {
 	router.HandleFunc("/login/", a.login).Methods("POST", "OPTIONS")
-	router.HandleFunc("/refresh-token/", a.refreshToken).Methods("POST")
-	router.Handle("/logout/", a.tokenAuth.AuthTokenMiddleware(http.HandlerFunc(a.logout))).Methods("POST")
+	router.HandleFunc("/refresh-token/", a.refreshToken).Methods("POST", "OPTIONS")
+	router.Handle("/logout/", a.tokenAuth.AuthTokenMiddleware(http.HandlerFunc(a.logout))).Methods("POST", "OPTIONS")
 }
 
 func (a *AuthController) login(w http.ResponseWriter, r *http.Request) {

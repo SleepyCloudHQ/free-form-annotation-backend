@@ -21,7 +21,7 @@ func NewUsersController(tokenAuth *auth.TokenAuth) *UsersController {
 
 func (u *UsersController) Init(router *mux.Router) {
 	router.Use(u.tokenAuth.AuthTokenMiddleware)
-	router.HandleFunc("/", u.getUser).Methods("GET")
+	router.HandleFunc("/", u.getUser).Methods("GET", "OPTIONS")
 }
 
 func (u *UsersController) getUser(w http.ResponseWriter, r *http.Request) {

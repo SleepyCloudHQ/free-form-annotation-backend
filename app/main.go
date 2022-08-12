@@ -66,16 +66,16 @@ func (a *App) Initialize() {
 
 func (a *App) InitializeControllers() {
 	cors := mux_handlers.CORS(
-		mux_handlers.AllowedHeaders([]string{"content-type"}),
+		mux_handlers.AllowedHeaders([]string{"Content-Type", "sentry-trace", "baggage"}),
 		mux_handlers.AllowedOrigins([]string{os.Getenv("ALLOWED_ORIGIN")}),
-		mux_handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PATCH", "DELETE"}),
+		mux_handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PATCH", "DELETE", "OPTIONS"}),
 		mux_handlers.AllowCredentials(),
 	)
 
 	recoverHandler := mux_handlers.RecoveryHandler()
 	sentryHandler := sentryhttp.New(sentryhttp.Options{Repanic: true})
 
-	a.Router.Use(recoverHandler, sentryHandler.Handle, cors, middlewares.JSONResponseMiddleware)
+	a.Router.Use(recoverHandler, sentryHandler.Handle, middlewares.JSONResponseMiddleware, cors)
 
 	authRouter := a.Router.PathPrefix("/auth").Subrouter()
 	authController := controllers.NewAuthController(a.TokenAuth, a.AuthHandler)

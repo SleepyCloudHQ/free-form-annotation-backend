@@ -27,12 +27,12 @@ func NewAdminController(tokenAuth *auth.TokenAuth, usersHandler *handlers.UsersH
 
 func (a *AdminController) Init(router *mux.Router) {
 	router.Use(a.tokenAuth.AuthTokenMiddleware, middlewares.IsAdminMiddleware)
-	router.HandleFunc("/users/", a.getUsers).Methods("GET")
+	router.HandleFunc("/users/", a.getUsers).Methods("GET", "OPTIONS")
 
 	adminUserManagementRouter := router.PathPrefix("/users/{userId:[0-9]+}").Subrouter()
 	adminUserManagementRouter.Use(middlewares.ParseUserIdMiddleware)
 	adminUserManagementRouter.HandleFunc("/roles/", a.patchUserRole).Methods("PATCH", "OPTIONS")
-	adminUserManagementRouter.HandleFunc("/dataset-perms/", a.postUserDatasetPerm).Methods("POST")
+	adminUserManagementRouter.HandleFunc("/dataset-perms/", a.postUserDatasetPerm).Methods("POST", "OPTIONS")
 	adminUserManagementRouter.HandleFunc("/dataset-perms/", a.deleteUserDatasetPerm).Methods("DELETE", "OPTIONS")
 }
 

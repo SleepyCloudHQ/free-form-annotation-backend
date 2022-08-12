@@ -34,17 +34,17 @@ func NewDatasetsController(tokenAuth *auth.TokenAuth, datasetsHandler *handlers.
 func (d *DatasetsController) Init(router *mux.Router) {
 	router.Use(d.tokenAuth.AuthTokenMiddleware)
 
-	router.HandleFunc("/", d.getDatasets).Methods("GET")
+	router.HandleFunc("/", d.getDatasets).Methods("GET", "OPTIONS")
 
 	datasetRouter := router.PathPrefix("/{datasetId:[0-9]+}").Subrouter()
 	datasetPermsMiddleware := middlewares.GetDatasetPermsMiddleware(d.db)
 	datasetRouter.Use(middlewares.ParseDatasetIdMiddleware, datasetPermsMiddleware)
 
-	datasetRouter.HandleFunc("/", d.getDataset).Methods("GET")
-	datasetRouter.HandleFunc("/samples/", d.getSamples).Methods("GET")
-	datasetRouter.HandleFunc("/samples/next/", d.assignNextSample).Methods("GET")
-	datasetRouter.HandleFunc("/samples/{status:[a-z]+}/", d.getSamplesWithStatus).Methods("GET")
-	datasetRouter.HandleFunc("/samples/{sampleId:[0-9]+}/", d.getSample).Methods("GET")
+	datasetRouter.HandleFunc("/", d.getDataset).Methods("GET", "OPTIONS")
+	datasetRouter.HandleFunc("/samples/", d.getSamples).Methods("GET", "OPTIONS")
+	datasetRouter.HandleFunc("/samples/next/", d.assignNextSample).Methods("GET", "OPTIONS")
+	datasetRouter.HandleFunc("/samples/{status:[a-z]+}/", d.getSamplesWithStatus).Methods("GET", "OPTIONS")
+	datasetRouter.HandleFunc("/samples/{sampleId:[0-9]+}/", d.getSample).Methods("GET", "OPTIONS")
 	datasetRouter.HandleFunc("/samples/{sampleId:[0-9]+}/", d.patchSample).Methods("PATCH", "OPTIONS")
 
 }
