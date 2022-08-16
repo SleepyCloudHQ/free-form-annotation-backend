@@ -6,6 +6,7 @@ import (
 	"backend/app/handlers"
 	"backend/app/middlewares"
 	"backend/app/models"
+	dataset_utils "backend/app/utils/dataset"
 	"encoding/json"
 	"errors"
 	"log"
@@ -13,37 +14,8 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
-	"gopkg.in/guregu/null.v4"
 	"gorm.io/gorm"
 )
-
-type Entity struct {
-	Id    uint        `json:"id"`
-	Start uint        `json:"start"`
-	End   uint        `json:"end"`
-	Tag   null.String `json:"tag"`
-	Notes null.String `json:"notes"`
-	Color null.String `json:"color"`
-}
-
-type Relationship struct {
-	Id      uint        `json:"id"`
-	Entity1 uint        `json:"entity1"`
-	Entity2 uint        `json:"entity2"`
-	Name    string      `json:"name"`
-	Color   null.String `json:"color"`
-}
-
-type AnnotationData struct {
-	Entities      []Entity       `json:"entities"`
-	Relationships []Relationship `json:"relationships"`
-}
-
-type SampleData struct {
-	Text        string         `json:"text"`
-	Annotations AnnotationData `json:"annotations"`
-	Status      null.String    `json:"status"`
-}
 
 type DatasetsController struct {
 	tokenAuth       *auth.TokenAuth
@@ -103,19 +75,52 @@ func (d *DatasetsController) postDataset(w http.ResponseWriter, r *http.Request)
 	// user := r.Context().Value(auth.UserContextKey).(*models.User)
 
 	r.ParseMultipartForm(32 << 20)
+	datasetName := r.FormValue("datasetName")
+	entityTags := dataset_utils.ParseTags(r.FormValue("entities"))
+	relationshipTags := dataset_utils.ParseTags(r.FormValue("relationships"))
+
+	if datasetName == "" {
+		log.Panic("dataset name cannot be empty")
+	}
+
+	metadata, metadataErr := dataset_utils.CreateDatasetMetadata(entityTags, relationshipTags)
+	if metadataErr != nil {
+		log.Panic(metadataErr)
+	}
+
 	file, _, err := r.FormFile("datasetFile")
 	if err != nil {
 		log.Panic(err)
 	}
 	defer file.Close()
-	var samplesData []SampleData
-	if parsingErr := json.NewDecoder(file).Decode(&samplesData); parsingErr != nil {
-		log.Panic(parsingErr)
+
+	samplesData, samplesDataErr := dataset_utils.LoadSampleData(file)
+	if samplesDataErr != nil {
+		log.Panic(samplesDataErr)
 	}
 
-	log.Println(samplesData)
+	// create dataset
+	dataset := &models.Dataset{
+		Name:     datasetName,
+		Metadata: metadata,
+	}
+
+	if datasetCreateErr := d.db.Create(&dataset).Error; datasetCreateErr != nil {
+		log.Fatal(datasetCreateErr)
+	}
+
+	samples, samplesErr := dataset_utils.MapSampleDataToSample(samplesData, dataset.ID)
+	if samplesErr != nil {
+		log.Panic(samplesErr)
+	}
+
+	// create samples in a batch
+	if sampleCreateErr := d.db.Create(&samples).Error; sampleCreateErr != nil {
+		log.Fatal(sampleCreateErr)
+	}
 
 	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(dataset)
 }
 
 func (d *DatasetsController) getDataset(w http.ResponseWriter, r *http.Request) {

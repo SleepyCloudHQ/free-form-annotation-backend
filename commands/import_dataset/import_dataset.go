@@ -65,7 +65,11 @@ func main() {
 		log.Fatal(datasetCreateErr)
 	}
 
-	samples := dataset_utils.MapSampleDataToSample(samplesData, dataset.ID)
+	samples, samplesErr := dataset_utils.MapSampleDataToSample(samplesData, dataset.ID)
+	if samplesErr != nil {
+		log.Fatal(samplesErr)
+	}
+
 	// create samples in a batch
 	if sampleCreateErr := db.Create(&samples).Error; sampleCreateErr != nil {
 		log.Fatal(sampleCreateErr)

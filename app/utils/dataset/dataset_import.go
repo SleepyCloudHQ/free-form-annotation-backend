@@ -4,7 +4,6 @@ import (
 	"backend/app/models"
 	"encoding/json"
 	"io"
-	"log"
 	"strings"
 
 	"gopkg.in/guregu/null.v4"
@@ -39,13 +38,13 @@ type SampleData struct {
 	Status      null.String    `json:"status"`
 }
 
-func MapSampleDataToSample(sampleData []SampleData, datasetId uint) []models.Sample {
+func MapSampleDataToSample(sampleData []SampleData, datasetId uint) ([]models.Sample, error) {
 	samples := make([]models.Sample, len(sampleData))
 
 	for i, d := range sampleData {
 		annotationsData, err := json.Marshal(d.Annotations)
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 
 		samples[i] = models.Sample{
@@ -56,7 +55,7 @@ func MapSampleDataToSample(sampleData []SampleData, datasetId uint) []models.Sam
 		}
 	}
 
-	return samples
+	return samples, nil
 }
 
 func LoadSampleData(r io.Reader) ([]SampleData, error) {
