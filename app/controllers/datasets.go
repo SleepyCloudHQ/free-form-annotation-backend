@@ -8,12 +8,42 @@ import (
 	"backend/app/models"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"gopkg.in/guregu/null.v4"
 	"gorm.io/gorm"
 )
+
+type Entity struct {
+	Id    uint        `json:"id"`
+	Start uint        `json:"start"`
+	End   uint        `json:"end"`
+	Tag   null.String `json:"tag"`
+	Notes null.String `json:"notes"`
+	Color null.String `json:"color"`
+}
+
+type Relationship struct {
+	Id      uint        `json:"id"`
+	Entity1 uint        `json:"entity1"`
+	Entity2 uint        `json:"entity2"`
+	Name    string      `json:"name"`
+	Color   null.String `json:"color"`
+}
+
+type AnnotationData struct {
+	Entities      []Entity       `json:"entities"`
+	Relationships []Relationship `json:"relationships"`
+}
+
+type SampleData struct {
+	Text        string         `json:"text"`
+	Annotations AnnotationData `json:"annotations"`
+	Status      null.String    `json:"status"`
+}
 
 type DatasetsController struct {
 	tokenAuth       *auth.TokenAuth
@@ -35,6 +65,7 @@ func (d *DatasetsController) Init(router *mux.Router) {
 	router.Use(d.tokenAuth.AuthTokenMiddleware)
 
 	router.HandleFunc("/", d.getDatasets).Methods("GET", "OPTIONS")
+	router.HandleFunc("/", d.postDataset).Methods("POST", "OPTIONS")
 
 	datasetRouter := router.PathPrefix("/{datasetId:[0-9]+}").Subrouter()
 	datasetPermsMiddleware := middlewares.GetDatasetPermsMiddleware(d.db)
@@ -66,6 +97,25 @@ func (d *DatasetsController) getDatasets(w http.ResponseWriter, r *http.Request)
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(datasets)
+}
+
+func (d *DatasetsController) postDataset(w http.ResponseWriter, r *http.Request) {
+	// user := r.Context().Value(auth.UserContextKey).(*models.User)
+
+	r.ParseMultipartForm(32 << 20)
+	file, _, err := r.FormFile("datasetFile")
+	if err != nil {
+		log.Panic(err)
+	}
+	defer file.Close()
+	var samplesData []SampleData
+	if parsingErr := json.NewDecoder(file).Decode(&samplesData); parsingErr != nil {
+		log.Panic(parsingErr)
+	}
+
+	log.Println(samplesData)
+
+	w.WriteHeader(http.StatusCreated)
 }
 
 func (d *DatasetsController) getDataset(w http.ResponseWriter, r *http.Request) {
