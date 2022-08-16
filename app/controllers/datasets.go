@@ -75,7 +75,7 @@ func (d *DatasetsController) postDataset(w http.ResponseWriter, r *http.Request)
 	// user := r.Context().Value(auth.UserContextKey).(*models.User)
 
 	r.ParseMultipartForm(32 << 20)
-	datasetName := r.FormValue("datasetName")
+	datasetName := r.FormValue("name")
 	entityTags := dataset_utils.ParseTags(r.FormValue("entities"))
 	relationshipTags := dataset_utils.ParseTags(r.FormValue("relationships"))
 
@@ -88,7 +88,7 @@ func (d *DatasetsController) postDataset(w http.ResponseWriter, r *http.Request)
 		log.Panic(metadataErr)
 	}
 
-	file, _, err := r.FormFile("datasetFile")
+	file, _, err := r.FormFile("file")
 	if err != nil {
 		log.Panic(err)
 	}
