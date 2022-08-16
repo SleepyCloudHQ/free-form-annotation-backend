@@ -10,7 +10,7 @@ import (
 )
 
 func handleRecordNotFound(w http.ResponseWriter) {
-	w.WriteHeader(http.StatusBadRequest)
+	w.WriteHeader(http.StatusNotFound)
 	WriteError(errors.New("Not found"), w)
 }
 
