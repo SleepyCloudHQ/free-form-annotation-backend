@@ -37,7 +37,7 @@ func (d *DatasetsController) Init(router *mux.Router) {
 	router.Use(d.tokenAuth.AuthTokenMiddleware)
 
 	router.HandleFunc("/", d.getDatasets).Methods("GET", "OPTIONS")
-	router.HandleFunc("/", d.postDataset).Methods("POST", "OPTIONS")
+	router.Handle("/", middlewares.IsAdminMiddleware(http.HandlerFunc(d.postDataset))).Methods("POST", "OPTIONS")
 
 	datasetRouter := router.PathPrefix("/{datasetId:[0-9]+}").Subrouter()
 	datasetPermsMiddleware := middlewares.GetDatasetPermsMiddleware(d.db)
@@ -72,8 +72,6 @@ func (d *DatasetsController) getDatasets(w http.ResponseWriter, r *http.Request)
 }
 
 func (d *DatasetsController) postDataset(w http.ResponseWriter, r *http.Request) {
-	// user := r.Context().Value(auth.UserContextKey).(*models.User)
-
 	r.ParseMultipartForm(32 << 20)
 	datasetName := r.FormValue("name")
 	entityTags := dataset_utils.ParseTags(r.FormValue("entities"))
