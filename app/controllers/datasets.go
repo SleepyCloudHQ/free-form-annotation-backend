@@ -44,11 +44,23 @@ func (d *DatasetsController) Init(router *mux.Router) {
 	datasetRouter.Use(middlewares.ParseDatasetIdMiddleware, datasetPermsMiddleware)
 
 	datasetRouter.HandleFunc("/", d.getDataset).Methods("GET", "OPTIONS")
+	datasetRouter.Handle("/", middlewares.IsAdminMiddleware(http.HandlerFunc(d.deleteDataset))).Methods("DELETE", "OPTIONS")
 	datasetRouter.HandleFunc("/samples/", d.getSamples).Methods("GET", "OPTIONS")
 	datasetRouter.HandleFunc("/samples/next/", d.assignNextSample).Methods("GET", "OPTIONS")
 	datasetRouter.HandleFunc("/samples/{status:[a-z]+}/", d.getSamplesWithStatus).Methods("GET", "OPTIONS")
 	datasetRouter.HandleFunc("/samples/{sampleId:[0-9]+}/", d.getSample).Methods("GET", "OPTIONS")
 	datasetRouter.HandleFunc("/samples/{sampleId:[0-9]+}/", d.patchSample).Methods("PATCH", "OPTIONS")
+}
+
+func (d *DatasetsController) deleteDataset(w http.ResponseWriter, r *http.Request) {
+	datasetId := r.Context().Value(middlewares.DatasetIdContextKey).(int)
+	if deleteErr := d.datasetsHandler.DeleteDataset(uint(datasetId)); deleteErr != nil {
+		utils.HandleCommonErrors(deleteErr, w)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
 
 }
 
