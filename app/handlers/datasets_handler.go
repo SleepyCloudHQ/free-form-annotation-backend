@@ -33,28 +33,28 @@ func NewDatasetsHandler(db *gorm.DB) *DatasetsHandler {
 	}
 }
 
-func (s *DatasetsHandler) GetDatasets() *[]DatasetData {
-	var datasets []models.Dataset
+func (s *DatasetsHandler) GetDatasets() []*DatasetData {
+	var datasets []*models.Dataset
 	s.DB.Order("created_at desc").Find(&datasets)
 
-	result := make([]DatasetData, len(datasets))
+	result := make([]*DatasetData, len(datasets))
 	for i, dataset := range datasets {
-		result[i] = *s.mapDatasetToDatasetData(&dataset)
+		result[i] = s.mapDatasetToDatasetData(dataset)
 	}
-	return &result
+	return result
 }
 
-func (s *DatasetsHandler) GetDatasetsForUser(user *models.User) (*[]DatasetData, error) {
-	var datasets []models.Dataset
+func (s *DatasetsHandler) GetDatasetsForUser(user *models.User) ([]*DatasetData, error) {
+	var datasets []*models.Dataset
 	if dbErr := s.DB.Model(user).Association("Datasets").Find(&datasets); dbErr != nil {
 		return nil, dbErr
 	}
 
-	result := make([]DatasetData, len(datasets))
+	result := make([]*DatasetData, len(datasets))
 	for i, dataset := range datasets {
-		result[i] = *s.mapDatasetToDatasetData(&dataset)
+		result[i] = s.mapDatasetToDatasetData(dataset)
 	}
-	return &result, nil
+	return result, nil
 
 }
 
@@ -92,4 +92,8 @@ func (s *DatasetsHandler) getDatasetsStats(dataset *models.Dataset) *DatasetStat
 	stats.PendingSamples = s.DB.Model(dataset).Where("status IS NULL AND assigned_to IS NULL").Association("Samples").Count()
 
 	return stats
+}
+
+func (s *DatasetsHandler) DeleteDataset(id uint) error {
+	return s.DB.Delete(&models.Dataset{}, id).Error
 }

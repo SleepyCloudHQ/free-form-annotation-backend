@@ -24,22 +24,22 @@ func NewSamplesHandler(db *gorm.DB) *SamplesHandler {
 	}
 }
 
-func (s *SamplesHandler) GetSamples(datasetId uint) (*[]models.Sample, error) {
-	var samples []models.Sample
+func (s *SamplesHandler) GetSamples(datasetId uint) ([]*models.Sample, error) {
+	var samples []*models.Sample
 	if dbErr := s.DB.Where("dataset_id = ?", datasetId).Find(&samples).Error; dbErr != nil {
 		return nil, dbErr
 	}
 
-	return &samples, nil
+	return samples, nil
 }
 
-func (s *SamplesHandler) GetSamplesWithStatus(datasetId uint, status models.StatusType) (*[]models.Sample, error) {
-	var samples []models.Sample
+func (s *SamplesHandler) GetSamplesWithStatus(datasetId uint, status models.StatusType) ([]*models.Sample, error) {
+	var samples []*models.Sample
 	if dbErr := s.DB.Where("dataset_id = ? AND status = ?", datasetId, status).Find(&samples).Error; dbErr != nil {
 		return nil, dbErr
 	}
 
-	return &samples, nil
+	return samples, nil
 }
 
 func (s *SamplesHandler) GetSample(datasetId uint, sampleId uint) (*models.Sample, error) {
