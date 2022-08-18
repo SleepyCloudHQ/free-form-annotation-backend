@@ -2,8 +2,8 @@ package main
 
 import (
 	"backend/app/handlers"
-	"backend/app/models"
 	"backend/app/utils"
+	dataset_export "backend/app/utils/dataset/export"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -11,50 +11,7 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
-	"gopkg.in/guregu/null.v4"
 )
-
-type Entity struct {
-	Id      uint        `json:"id"`
-	Content string      `json:"content"`
-	Start   uint        `json:"start"`
-	End     uint        `json:"end"`
-	Tag     null.String `json:"tag"`
-	Notes   null.String `json:"notes"`
-	Color   null.String `json:"color"`
-}
-
-type Relationship struct {
-	Id      uint        `json:"id"`
-	Entity1 uint        `json:"entity1"`
-	Entity2 uint        `json:"entity2"`
-	Name    string      `json:"name"`
-	Color   null.String `json:"color"`
-}
-
-type AnnotationData struct {
-	Entities      []Entity       `json:"entities"`
-	Relationships []Relationship `json:"relationships"`
-}
-
-type SampleData struct {
-	Text        string         `json:"text"`
-	Annotations AnnotationData `json:"annotations"`
-	Status      null.String    `json:"status"`
-}
-
-func mapSampleToSampleData(sample *models.Sample) *SampleData {
-	var annotations AnnotationData
-	if parsingErr := json.Unmarshal(sample.Annotations, &annotations); parsingErr != nil {
-		log.Fatal(parsingErr)
-	}
-
-	return &SampleData{
-		Text:        sample.Text,
-		Annotations: annotations,
-		Status:      sample.Status,
-	}
-}
 
 func main() {
 	godotenv.Load()
@@ -86,9 +43,9 @@ func main() {
 		log.Fatal(samplesErr)
 	}
 
-	result := make([]*SampleData, len(*samples))
-	for i, s := range *samples {
-		result[i] = mapSampleToSampleData(&s)
+	samplesData, exportErr := dataset_export.MapSamplesToSampleData(samples)
+	if exportErr != nil {
+		log.Fatal(exportErr)
 	}
 
 	outputFile, openFileErr := os.Create(*outputFilePath)
@@ -98,7 +55,7 @@ func main() {
 
 	defer outputFile.Close()
 
-	if e := json.NewEncoder(outputFile).Encode(result); e != nil {
+	if e := json.NewEncoder(outputFile).Encode(samplesData); e != nil {
 		log.Fatal(e)
 	}
 

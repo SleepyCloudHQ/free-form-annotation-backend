@@ -6,9 +6,11 @@ import (
 	"backend/app/handlers"
 	"backend/app/middlewares"
 	"backend/app/models"
-	dataset_utils "backend/app/utils/dataset"
+	dataset_export "backend/app/utils/dataset/export"
+	dataset_import "backend/app/utils/dataset/import"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -45,6 +47,7 @@ func (d *DatasetsController) Init(router *mux.Router) {
 
 	datasetRouter.HandleFunc("/", d.getDataset).Methods("GET", "OPTIONS")
 	datasetRouter.Handle("/", middlewares.IsAdminMiddleware(http.HandlerFunc(d.deleteDataset))).Methods("DELETE", "OPTIONS")
+	datasetRouter.Handle("/export/", middlewares.IsAdminMiddleware(http.HandlerFunc(d.exportDataset))).Methods("GET", "OPTIONS")
 	datasetRouter.HandleFunc("/samples/", d.getSamples).Methods("GET", "OPTIONS")
 	datasetRouter.HandleFunc("/samples/next/", d.assignNextSample).Methods("GET", "OPTIONS")
 	datasetRouter.HandleFunc("/samples/{status:[a-z]+}/", d.getSamplesWithStatus).Methods("GET", "OPTIONS")
@@ -62,12 +65,31 @@ func (d *DatasetsController) deleteDataset(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (d *DatasetsController) exportDataset(w http.ResponseWriter, r *http.Request) {
+	datasetId := r.Context().Value(middlewares.DatasetIdContextKey).(int)
+	samples, samplesErr := d.samplesHandler.GetSamples(uint(datasetId))
+	if samplesErr != nil {
+		utils.HandleCommonErrors(samplesErr, w)
+		return
+	}
+
+	samplesData, exportErr := dataset_export.MapSamplesToSampleData(samples)
+	if exportErr != nil {
+		utils.HandleCommonErrors(samplesErr, w)
+		return
+	}
+
+	dispositionHeader := fmt.Sprintf("attachment; filename=dataset_%d.json", datasetId)
+	w.Header().Set("Content-Disposition", dispositionHeader)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(samplesData)
 }
 
 func (d *DatasetsController) getDatasets(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value(auth.UserContextKey).(*models.User)
 
-	var datasets *[]handlers.DatasetData
+	var datasets []*handlers.DatasetData
 	if user.Role == models.AdminRole {
 		datasets = d.datasetsHandler.GetDatasets()
 	} else {
@@ -86,14 +108,14 @@ func (d *DatasetsController) getDatasets(w http.ResponseWriter, r *http.Request)
 func (d *DatasetsController) postDataset(w http.ResponseWriter, r *http.Request) {
 	r.ParseMultipartForm(32 << 20)
 	datasetName := r.FormValue("name")
-	entityTags := dataset_utils.ParseTags(r.FormValue("entities"))
-	relationshipTags := dataset_utils.ParseTags(r.FormValue("relationships"))
+	entityTags := dataset_import.ParseTags(r.FormValue("entities"))
+	relationshipTags := dataset_import.ParseTags(r.FormValue("relationships"))
 
 	if datasetName == "" {
 		log.Panic("dataset name cannot be empty")
 	}
 
-	metadata, metadataErr := dataset_utils.CreateDatasetMetadata(entityTags, relationshipTags)
+	metadata, metadataErr := dataset_import.CreateDatasetMetadata(entityTags, relationshipTags)
 	if metadataErr != nil {
 		log.Panic(metadataErr)
 	}
@@ -104,7 +126,7 @@ func (d *DatasetsController) postDataset(w http.ResponseWriter, r *http.Request)
 	}
 	defer file.Close()
 
-	samplesData, samplesDataErr := dataset_utils.LoadSampleData(file)
+	samplesData, samplesDataErr := dataset_import.LoadSampleData(file)
 	if samplesDataErr != nil {
 		log.Panic(samplesDataErr)
 	}
@@ -119,7 +141,7 @@ func (d *DatasetsController) postDataset(w http.ResponseWriter, r *http.Request)
 		log.Fatal(datasetCreateErr)
 	}
 
-	samples, samplesErr := dataset_utils.MapSampleDataToSample(samplesData, dataset.ID)
+	samples, samplesErr := dataset_import.MapSampleDataToSample(samplesData, dataset.ID)
 	if samplesErr != nil {
 		log.Panic(samplesErr)
 	}

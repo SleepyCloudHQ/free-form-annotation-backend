@@ -3,7 +3,7 @@ package main
 import (
 	"backend/app/models"
 	"backend/app/utils"
-	dataset_utils "backend/app/utils/dataset"
+	dataset_import "backend/app/utils/dataset/import"
 	"flag"
 	"fmt"
 	"log"
@@ -12,12 +12,12 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func loadSampleDataFromFile(filePath string) ([]dataset_utils.SampleData, error) {
+func loadSampleDataFromFile(filePath string) ([]dataset_import.SampleData, error) {
 	samplesFile, fileErr := os.Open(filePath)
 	if fileErr != nil {
 		return nil, fileErr
 	}
-	return dataset_utils.LoadSampleData(samplesFile)
+	return dataset_import.LoadSampleData(samplesFile)
 }
 
 func main() {
@@ -34,9 +34,9 @@ func main() {
 		log.Fatal("Dataset name cannot be empty")
 	}
 
-	entityTags := dataset_utils.ParseTags(*predefinedEntities)
-	relationshipTags := dataset_utils.ParseTags(*predefinedRelationships)
-	metadata, metadataErr := dataset_utils.CreateDatasetMetadata(entityTags, relationshipTags)
+	entityTags := dataset_import.ParseTags(*predefinedEntities)
+	relationshipTags := dataset_import.ParseTags(*predefinedRelationships)
+	metadata, metadataErr := dataset_import.CreateDatasetMetadata(entityTags, relationshipTags)
 	if metadataErr != nil {
 		log.Fatal(metadataErr)
 	}
@@ -65,7 +65,7 @@ func main() {
 		log.Fatal(datasetCreateErr)
 	}
 
-	samples, samplesErr := dataset_utils.MapSampleDataToSample(samplesData, dataset.ID)
+	samples, samplesErr := dataset_import.MapSampleDataToSample(samplesData, dataset.ID)
 	if samplesErr != nil {
 		log.Fatal(samplesErr)
 	}
