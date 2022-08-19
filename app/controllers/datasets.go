@@ -81,7 +81,6 @@ func (d *DatasetsController) exportDataset(w http.ResponseWriter, r *http.Reques
 
 	dispositionHeader := fmt.Sprintf("attachment; filename=dataset_%d.json", datasetId)
 	w.Header().Set("Content-Disposition", dispositionHeader)
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(samplesData)
 }
