@@ -22,16 +22,16 @@ func NewUsersHandler(db *gorm.DB, validator *validator.Validate) *UsersHandler {
 	}
 }
 
-func (u *UsersHandler) GetUsers() *[]models.User {
-	var users []models.User
+func (u *UsersHandler) GetUsers() []*models.User {
+	var users []*models.User
 	u.DB.Find(&users)
-	return &users
+	return users
 }
 
-func (u *UsersHandler) GetUsersWithDatasets() *[]models.User {
-	var users []models.User
+func (u *UsersHandler) GetUsersWithDatasets() []*models.User {
+	var users []*models.User
 	u.DB.Preload("Datasets").Find(&users)
-	return &users
+	return users
 }
 
 func (u *UsersHandler) PatchUserRole(userId uint, request *PatchUserRoleRequest) (*models.User, error) {
