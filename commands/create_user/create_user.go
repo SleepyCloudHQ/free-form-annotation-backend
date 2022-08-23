@@ -41,7 +41,7 @@ func main() {
 		role = models.AdminRole
 	}
 
-	if _, userErr := userAuth.CreateUser(*email, *pass, role); err != nil {
+	if _, userErr := userAuth.CreateUser(*email, *pass, role); userErr != nil {
 		log.Fatal(userErr)
 	}
 
