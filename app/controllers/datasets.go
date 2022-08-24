@@ -75,7 +75,7 @@ func (d *DatasetsController) exportDataset(w http.ResponseWriter, r *http.Reques
 
 	samplesData, exportErr := dataset_export.MapSamplesToSampleData(samples)
 	if exportErr != nil {
-		utils.HandleCommonErrors(samplesErr, w)
+		utils.HandleCommonErrors(exportErr, w)
 		return
 	}
 

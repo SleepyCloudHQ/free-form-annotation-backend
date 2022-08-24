@@ -19,12 +19,18 @@ type Entity struct {
 	Color null.String `json:"color"`
 }
 
+type BoxPosition struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+}
+
 type Relationship struct {
-	Id      uint        `json:"id"`
-	Entity1 uint        `json:"entity1"`
-	Entity2 uint        `json:"entity2"`
-	Name    string      `json:"name"`
-	Color   null.String `json:"color"`
+	Id          uint         `json:"id"`
+	Entity1     uint         `json:"entity1"`
+	Entity2     uint         `json:"entity2"`
+	Name        string       `json:"name"`
+	Color       null.String  `json:"color"`
+	BoxPosition *BoxPosition `json:"boxPosition"`
 }
 
 type AnnotationData struct {
@@ -35,7 +41,7 @@ type AnnotationData struct {
 type SampleData struct {
 	Text        string         `json:"text"`
 	Annotations AnnotationData `json:"annotations"`
-	Status      null.String    `json:"status"`
+	// Status      null.String    `json:"status"`
 }
 
 func MapSampleDataToSample(sampleData []SampleData, datasetId uint) ([]models.Sample, error) {
@@ -50,8 +56,8 @@ func MapSampleDataToSample(sampleData []SampleData, datasetId uint) ([]models.Sa
 		samples[i] = models.Sample{
 			DatasetID:   datasetId,
 			Annotations: datatypes.JSON(annotationsData),
-			Status:      d.Status,
-			Text:        d.Text,
+			// Status:      d.Status,
+			Text: d.Text,
 		}
 	}
 

@@ -17,12 +17,18 @@ type Entity struct {
 	Color   null.String `json:"color"`
 }
 
+type BoxPosition struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+}
+
 type Relationship struct {
-	Id      uint        `json:"id"`
-	Entity1 uint        `json:"entity1"`
-	Entity2 uint        `json:"entity2"`
-	Name    string      `json:"name"`
-	Color   null.String `json:"color"`
+	Id          uint        `json:"id"`
+	Entity1     uint        `json:"entity1"`
+	Entity2     uint        `json:"entity2"`
+	Name        string      `json:"name"`
+	Color       null.String `json:"color"`
+	BoxPosition BoxPosition `json:"boxPosition"`
 }
 
 type AnnotationData struct {
