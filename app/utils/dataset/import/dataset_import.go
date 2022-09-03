@@ -10,6 +10,11 @@ import (
 	"gorm.io/datatypes"
 )
 
+type Metadata struct {
+	EntityTags       []string `json:"entityTags"`
+	RelationshipTags []string `json:"relationshipTags"`
+}
+
 type Entity struct {
 	Id    uint        `json:"id"`
 	Start uint        `json:"start"`
@@ -41,7 +46,14 @@ type AnnotationData struct {
 type SampleData struct {
 	Text        string         `json:"text"`
 	Annotations AnnotationData `json:"annotations"`
-	// Status      null.String    `json:"status"`
+	Status      null.String    `json:"status"`
+	Metadata    Metadata       `json:"metadata"`
+}
+
+type JsonDataset struct {
+	Name     string       `json:"name"`
+	Samples  []SampleData `json:"samples"`
+	Metadata Metadata     `json:"metadata"`
 }
 
 func MapSampleDataToSample(sampleData []SampleData, datasetId uint) ([]models.Sample, error) {
@@ -53,11 +65,17 @@ func MapSampleDataToSample(sampleData []SampleData, datasetId uint) ([]models.Sa
 			return nil, err
 		}
 
+		metadata, metadataErr := json.Marshal(d.Metadata)
+		if metadataErr != nil {
+			return nil, err
+		}
+
 		samples[i] = models.Sample{
 			DatasetID:   datasetId,
 			Annotations: datatypes.JSON(annotationsData),
-			// Status:      d.Status,
-			Text: d.Text,
+			Status:      d.Status,
+			Text:        d.Text,
+			Metadata:    metadata,
 		}
 	}
 
@@ -95,4 +113,22 @@ func ParseTags(inputData string) []string {
 	}
 
 	return strings.Split(inputData, ",")
+}
+
+func ParseDataset(r io.Reader) (*JsonDataset, error) {
+	var dataset JsonDataset
+	parsingErr := json.NewDecoder(r).Decode(&dataset)
+	if parsingErr != nil {
+		return nil, parsingErr
+	}
+
+	return &dataset, nil
+}
+
+func MarshalDatasetMetadata(metadata Metadata) (datatypes.JSON, error) {
+	metadataJson, marshalErr := json.Marshal(metadata)
+	if marshalErr != nil {
+		return nil, marshalErr
+	}
+	return datatypes.JSON([]byte(metadataJson)), nil
 }
