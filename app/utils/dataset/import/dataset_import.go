@@ -10,9 +10,14 @@ import (
 	"gorm.io/datatypes"
 )
 
+type Tag struct {
+	Name  string      `json:"name"`
+	Color null.String `json:"color"`
+}
+
 type Metadata struct {
-	EntityTags       []string `json:"entityTags"`
-	RelationshipTags []string `json:"relationshipTags"`
+	EntityTags       []Tag `json:"entityTags"`
+	RelationshipTags []Tag `json:"relationshipTags"`
 }
 
 type Entity struct {
