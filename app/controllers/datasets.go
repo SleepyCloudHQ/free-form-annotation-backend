@@ -250,6 +250,14 @@ func (d *DatasetsController) patchSample(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// check whether status is a valid value
+	if !patchRequest.Status.Valid {
+		if statusErr := models.StatusType(patchRequest.Status.String).IsValid(); statusErr != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			utils.WriteError(statusErr, w)
+		}
+	}
+
 	sample, sampleErr := d.samplesHandler.PatchSample(uint(datasetId), uint(sampleId), patchRequest)
 	if sampleErr != nil {
 		utils.HandleCommonErrors(sampleErr, w)
