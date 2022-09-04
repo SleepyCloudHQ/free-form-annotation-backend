@@ -106,33 +106,25 @@ func (d *DatasetsController) getDatasets(w http.ResponseWriter, r *http.Request)
 
 func (d *DatasetsController) postDataset(w http.ResponseWriter, r *http.Request) {
 	r.ParseMultipartForm(32 << 20)
-	datasetName := r.FormValue("name")
-	entityTags := dataset_import.ParseTags(r.FormValue("entities"))
-	relationshipTags := dataset_import.ParseTags(r.FormValue("relationships"))
-
-	if datasetName == "" {
-		log.Panic("dataset name cannot be empty")
-	}
-
-	metadata, metadataErr := dataset_import.CreateDatasetMetadata(entityTags, relationshipTags)
-	if metadataErr != nil {
-		log.Panic(metadataErr)
-	}
-
 	file, _, err := r.FormFile("file")
 	if err != nil {
 		log.Panic(err)
 	}
 	defer file.Close()
 
-	samplesData, samplesDataErr := dataset_import.LoadSampleData(file)
-	if samplesDataErr != nil {
-		log.Panic(samplesDataErr)
+	jsonDataset, parsingErr := dataset_import.ParseDataset(file)
+	if parsingErr != nil {
+		log.Panic(parsingErr)
+	}
+
+	metadata, metadataErr := dataset_import.MarshalDatasetMetadata(jsonDataset.Metadata)
+	if metadataErr != nil {
+		log.Panic(metadataErr)
 	}
 
 	// create dataset
 	dataset := &models.Dataset{
-		Name:     datasetName,
+		Name:     jsonDataset.Name,
 		Metadata: metadata,
 	}
 
@@ -140,7 +132,7 @@ func (d *DatasetsController) postDataset(w http.ResponseWriter, r *http.Request)
 		log.Fatal(datasetCreateErr)
 	}
 
-	samples, samplesErr := dataset_import.MapSampleDataToSample(samplesData, dataset.ID)
+	samples, samplesErr := dataset_import.MapSampleDataToSample(jsonDataset.Samples, dataset.ID)
 	if samplesErr != nil {
 		log.Panic(samplesErr)
 	}
