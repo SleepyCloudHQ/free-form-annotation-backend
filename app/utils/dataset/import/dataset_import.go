@@ -4,64 +4,12 @@ import (
 	"backend/app/models"
 	"encoding/json"
 	"io"
-	"strings"
 
-	"gopkg.in/guregu/null.v4"
+	dataset "backend/app/utils/dataset"
 	"gorm.io/datatypes"
 )
 
-type Tag struct {
-	Name  string      `json:"name"`
-	Color null.String `json:"color"`
-}
-
-type Metadata struct {
-	EntityTags       []Tag `json:"entityTags"`
-	RelationshipTags []Tag `json:"relationshipTags"`
-}
-
-type Entity struct {
-	Id    uint        `json:"id"`
-	Start uint        `json:"start"`
-	End   uint        `json:"end"`
-	Tag   null.String `json:"tag"`
-	Notes null.String `json:"notes"`
-	Color null.String `json:"color"`
-}
-
-type BoxPosition struct {
-	X float64 `json:"x"`
-	Y float64 `json:"y"`
-}
-
-type Relationship struct {
-	Id          uint         `json:"id"`
-	Entity1     uint         `json:"entity1"`
-	Entity2     uint         `json:"entity2"`
-	Name        string       `json:"name"`
-	Color       null.String  `json:"color"`
-	BoxPosition *BoxPosition `json:"boxPosition"`
-}
-
-type AnnotationData struct {
-	Entities      []Entity       `json:"entities"`
-	Relationships []Relationship `json:"relationships"`
-}
-
-type SampleData struct {
-	Text        string         `json:"text"`
-	Annotations AnnotationData `json:"annotations"`
-	Status      null.String    `json:"status"`
-	Metadata    Metadata       `json:"metadata"`
-}
-
-type JsonDataset struct {
-	Name     string       `json:"name"`
-	Samples  []SampleData `json:"samples"`
-	Metadata Metadata     `json:"metadata"`
-}
-
-func MapSampleDataToSample(sampleData []SampleData, datasetId uint) ([]models.Sample, error) {
+func MapSampleDataToSample(sampleData []dataset.SampleData, datasetId uint) ([]models.Sample, error) {
 	samples := make([]models.Sample, len(sampleData))
 
 	for i, d := range sampleData {
@@ -87,16 +35,6 @@ func MapSampleDataToSample(sampleData []SampleData, datasetId uint) ([]models.Sa
 	return samples, nil
 }
 
-func LoadSampleData(r io.Reader) ([]SampleData, error) {
-	var samplesData []SampleData
-	parsingErr := json.NewDecoder(r).Decode(&samplesData)
-	if parsingErr != nil {
-		return nil, parsingErr
-	}
-
-	return samplesData, nil
-}
-
 func CreateDatasetMetadata(entityTags []string, relationshipTags []string) (datatypes.JSON, error) {
 	metadata := struct {
 		EntityTags       []string `json:"entityTags"`
@@ -112,16 +50,8 @@ func CreateDatasetMetadata(entityTags []string, relationshipTags []string) (data
 	return datatypes.JSON([]byte(metadataJson)), nil
 }
 
-func ParseTags(inputData string) []string {
-	if inputData == "" {
-		return nil
-	}
-
-	return strings.Split(inputData, ",")
-}
-
-func ParseDataset(r io.Reader) (*JsonDataset, error) {
-	var dataset JsonDataset
+func ParseDataset(r io.Reader) (*dataset.JsonDataset, error) {
+	var dataset dataset.JsonDataset
 	parsingErr := json.NewDecoder(r).Decode(&dataset)
 	if parsingErr != nil {
 		return nil, parsingErr
@@ -130,7 +60,7 @@ func ParseDataset(r io.Reader) (*JsonDataset, error) {
 	return &dataset, nil
 }
 
-func MarshalDatasetMetadata(metadata Metadata) (datatypes.JSON, error) {
+func MarshalDatasetMetadata(metadata dataset.Metadata) (datatypes.JSON, error) {
 	metadataJson, marshalErr := json.Marshal(metadata)
 	if marshalErr != nil {
 		return nil, marshalErr

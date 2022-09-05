@@ -67,13 +67,20 @@ func (d *DatasetsController) deleteDataset(w http.ResponseWriter, r *http.Reques
 
 func (d *DatasetsController) exportDataset(w http.ResponseWriter, r *http.Request) {
 	datasetId := r.Context().Value(middlewares.DatasetIdContextKey).(int)
+
+	dataset, datasetErr := d.datasetsHandler.GetDataset(uint(datasetId))
+	if datasetErr != nil {
+		utils.HandleCommonErrors(datasetErr, w)
+		return
+	}
+
 	samples, samplesErr := d.samplesHandler.GetSamples(uint(datasetId))
 	if samplesErr != nil {
 		utils.HandleCommonErrors(samplesErr, w)
 		return
 	}
 
-	samplesData, exportErr := dataset_export.MapSamplesToSampleData(samples)
+	jsonDataset, exportErr := dataset_export.ExportDataset(dataset, samples)
 	if exportErr != nil {
 		utils.HandleCommonErrors(exportErr, w)
 		return
@@ -82,7 +89,7 @@ func (d *DatasetsController) exportDataset(w http.ResponseWriter, r *http.Reques
 	dispositionHeader := fmt.Sprintf("attachment; filename=dataset_%d.json", datasetId)
 	w.Header().Set("Content-Disposition", dispositionHeader)
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(samplesData)
+	json.NewEncoder(w).Encode(jsonDataset)
 }
 
 func (d *DatasetsController) getDatasets(w http.ResponseWriter, r *http.Request) {
@@ -149,7 +156,7 @@ func (d *DatasetsController) postDataset(w http.ResponseWriter, r *http.Request)
 func (d *DatasetsController) getDataset(w http.ResponseWriter, r *http.Request) {
 	datasetId := r.Context().Value(middlewares.DatasetIdContextKey).(int)
 
-	dataset, datasetErr := d.datasetsHandler.GetDataset(uint(datasetId))
+	dataset, datasetErr := d.datasetsHandler.GetDatasetData(uint(datasetId))
 	if datasetErr != nil {
 		utils.HandleCommonErrors(datasetErr, w)
 		return

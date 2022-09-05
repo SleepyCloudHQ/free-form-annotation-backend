@@ -58,10 +58,19 @@ func (s *DatasetsHandler) GetDatasetsForUser(user *models.User) ([]*DatasetData,
 
 }
 
-func (s *DatasetsHandler) GetDataset(id uint) (*DatasetData, error) {
+func (s *DatasetsHandler) GetDataset(id uint) (*models.Dataset, error) {
 	dataset := &models.Dataset{}
 	if dbErr := s.DB.First(dataset, id).Error; dbErr != nil {
 		return nil, dbErr
+	}
+
+	return dataset, nil
+}
+
+func (s *DatasetsHandler) GetDatasetData(id uint) (*DatasetData, error) {
+	dataset, err := s.GetDataset(id)
+	if err != nil {
+		return nil, err
 	}
 
 	return s.mapDatasetToDatasetData(dataset), nil
