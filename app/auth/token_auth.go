@@ -14,6 +14,7 @@ import (
 )
 
 var TokenExpiredError = errors.New("token is expired")
+var InvalidTokenError = errors.New("invalid token provided")
 
 const AuthTokenCookieName = "auth_token"
 const RefreshTokenCookieName = "refresh_token"
@@ -60,6 +61,9 @@ func (a *TokenAuth) CreateAuthToken(user *models.User) (*models.AuthToken, error
 func (a *TokenAuth) CheckAuthToken(token string) (*models.User, error) {
 	authToken := &models.AuthToken{}
 	if result := a.DB.Preload("User").First(authToken, "token = ?", token); result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, InvalidTokenError
+		}
 		return nil, result.Error
 	}
 
@@ -81,8 +85,17 @@ func (a *TokenAuth) RefreshToken(token string) (*models.AuthToken, error) {
 	}
 
 	authToken := &models.AuthToken{}
-	if authTokenResult := a.DB.Preload("User").First(&authToken, refreshToken.ID); authTokenResult.Error != nil {
+	if authTokenResult := a.DB.Preload("User").First(&authToken, refreshToken.AuthTokenID); authTokenResult.Error != nil {
 		return nil, authTokenResult.Error
+	}
+
+	// delete old auth and refersh tokens
+	if result := a.DB.Delete(authToken); result.Error != nil {
+		return nil, result.Error
+	}
+
+	if result := a.DB.Delete(refreshToken); result.Error != nil {
+		return nil, result.Error
 	}
 
 	return a.CreateAuthToken(&authToken.User)

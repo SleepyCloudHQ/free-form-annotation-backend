@@ -3,9 +3,8 @@ package main
 import (
 	"backend/app/models"
 	"backend/app/utils"
-	"log"
-
 	"github.com/joho/godotenv"
+	"log"
 )
 
 func main() {
