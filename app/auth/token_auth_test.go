@@ -11,7 +11,7 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-func setupDB(t *testing.T) (*gorm.DB, func() error) {
+func setupDBForTokenTests(t *testing.T) (*gorm.DB, func() error) {
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
@@ -40,7 +40,7 @@ func setupDB(t *testing.T) (*gorm.DB, func() error) {
 }
 
 func TestCreateAuthToken(t *testing.T) {
-	db, cleanup := setupDB(t)
+	db, cleanup := setupDBForTokenTests(t)
 	defer cleanup()
 
 	tokenAuth := NewTokenAuth(db)
@@ -96,7 +96,7 @@ func TestCreateAuthToken(t *testing.T) {
 }
 
 func TestRefreshToken(t *testing.T) {
-	db, cleanup := setupDB(t)
+	db, cleanup := setupDBForTokenTests(t)
 	defer cleanup()
 
 	tokenAuth := NewTokenAuth(db)
@@ -128,7 +128,7 @@ func TestRefreshToken(t *testing.T) {
 }
 
 func TestCheckAuthToken(t *testing.T) {
-	db, cleanup := setupDB(t)
+	db, cleanup := setupDBForTokenTests(t)
 	defer cleanup()
 	tokenAuth := NewTokenAuth(db)
 
@@ -154,18 +154,18 @@ func TestCheckAuthToken(t *testing.T) {
 }
 
 func TestCheckIncorrectAuthToken(t *testing.T) {
-	db, cleanup := setupDB(t)
+	db, cleanup := setupDBForTokenTests(t)
 	defer cleanup()
 	tokenAuth := NewTokenAuth(db)
 
 	_, authErr := tokenAuth.CheckAuthToken("random token")
-	if !errors.Is(authErr, InvalidTokenError) {
+	if !errors.Is(authErr, ErrInvalidToken) {
 		t.Fatalf("unexpected error returned: %v", authErr)
 	}
 }
 
 func TestCheckExpiredAuthToken(t *testing.T) {
-	db, cleanup := setupDB(t)
+	db, cleanup := setupDBForTokenTests(t)
 	defer cleanup()
 	tokenAuth := NewTokenAuth(db)
 
@@ -185,7 +185,7 @@ func TestCheckExpiredAuthToken(t *testing.T) {
 	}
 
 	_, authErr := tokenAuth.CheckAuthToken(authToken.Token)
-	if !errors.Is(authErr, TokenExpiredError) {
+	if !errors.Is(authErr, ErrTokenExpired) {
 		t.Fatalf("unexpected error returned: %v", authErr)
 	}
 }

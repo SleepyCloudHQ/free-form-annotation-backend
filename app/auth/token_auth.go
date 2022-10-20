@@ -13,8 +13,8 @@ import (
 	"gorm.io/gorm"
 )
 
-var TokenExpiredError = errors.New("token is expired")
-var InvalidTokenError = errors.New("invalid token provided")
+var ErrTokenExpired = errors.New("token is expired")
+var ErrInvalidToken = errors.New("invalid token provided")
 
 const AuthTokenCookieName = "auth_token"
 const RefreshTokenCookieName = "refresh_token"
@@ -62,13 +62,13 @@ func (a *TokenAuth) CheckAuthToken(token string) (*models.User, error) {
 	authToken := &models.AuthToken{}
 	if result := a.DB.Preload("User").First(authToken, "token = ?", token); result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, InvalidTokenError
+			return nil, ErrInvalidToken
 		}
 		return nil, result.Error
 	}
 
 	if authToken.ExpiresAt.Before(time.Now()) {
-		return nil, TokenExpiredError
+		return nil, ErrTokenExpired
 	}
 
 	return &authToken.User, nil
@@ -81,7 +81,7 @@ func (a *TokenAuth) RefreshToken(token string) (*models.AuthToken, error) {
 	}
 
 	if refreshToken.ExpiresAt.Before(time.Now()) {
-		return nil, TokenExpiredError
+		return nil, ErrTokenExpired
 	}
 
 	authToken := &models.AuthToken{}

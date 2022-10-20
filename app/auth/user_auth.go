@@ -2,9 +2,13 @@ package auth
 
 import (
 	"backend/app/models"
+	"errors"
+
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
+
+var ErrWrongEmailOrPassword = errors.New("wrong email/password provided")
 
 type UserAuth struct {
 	DB *gorm.DB
@@ -33,11 +37,19 @@ func (a *UserAuth) CheckUserPassword(email string, password string) (*models.Use
 	user := &models.User{}
 	result := a.DB.First(user, "email = ?", email)
 	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, ErrWrongEmailOrPassword
+		}
+
 		return nil, result.Error
 	}
 
 	compareErr := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if compareErr != nil {
+		if errors.Is(compareErr, bcrypt.ErrMismatchedHashAndPassword) {
+			return nil, ErrWrongEmailOrPassword
+		}
+
 		return nil, compareErr
 	}
 
