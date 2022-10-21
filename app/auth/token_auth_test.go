@@ -189,3 +189,66 @@ func TestCheckExpiredAuthToken(t *testing.T) {
 		t.Fatalf("unexpected error returned: %v", authErr)
 	}
 }
+
+func TestCreateAuthCookies(t *testing.T) {
+	db, cleanup := setupDBForTokenTests(t)
+	defer cleanup()
+	tokenAuth := NewTokenAuth(db)
+
+	userAuth := NewUserAuth(db)
+	user, userErr := userAuth.CreateUser("email@email.com", "password", models.AdminRole)
+	if userErr != nil {
+		t.Fatalf("failed to create user: %v", userErr)
+	}
+
+	authToken, tokenErr := tokenAuth.CreateAuthToken(user)
+	if tokenErr != nil {
+		t.Fatalf("failed to create auth token: %v", tokenErr)
+	}
+
+	authTokenCookie, refreshTokenCookie := tokenAuth.CreateAuthCookies(authToken)
+	if authTokenCookie.Name != AuthTokenCookieName {
+		t.Fatalf("auth token cookie name is incorrect: got %v, expected: %v", authTokenCookie.Name, AuthTokenCookieName)
+	}
+
+	if authTokenCookie.Value != authToken.Token {
+		t.Fatalf("auth token cookie value is incorrect: got %v, expected: %v", authTokenCookie.Value, authToken.Token)
+	}
+
+	if refreshTokenCookie.Name != RefreshTokenCookieName {
+		t.Fatalf("refresh token cookie name is incorrect: got %v, expected: %v", refreshTokenCookie.Name, RefreshTokenCookieName)
+	}
+
+	if refreshTokenCookie.Value != authToken.RefreshToken.Token {
+		t.Fatalf("refresh token cookie value is incorrect: got %v, expected: %v", refreshTokenCookie.Value, authToken.RefreshToken.Token)
+	}
+}
+
+func TestCreateLogoutCookies(t *testing.T) {
+	tokenAuth := NewTokenAuth(nil)
+	authTokenCookie, refreshTokenCookie := tokenAuth.CreateLogoutCookies()
+
+	if authTokenCookie.Name != AuthTokenCookieName {
+		t.Fatalf("auth token cookie name is incorrect: got %v, expected: %v", authTokenCookie.Name, AuthTokenCookieName)
+	}
+
+	if authTokenCookie.Value != "" {
+		t.Fatalf("auth token cookie value should be empty, got %v", authTokenCookie.Value)
+	}
+
+	if authTokenCookie.MaxAge != -1 {
+		t.Fatalf("auth token cookie max age should be -1, got %v", authTokenCookie.MaxAge)
+	}
+
+	if refreshTokenCookie.Name != RefreshTokenCookieName {
+		t.Fatalf("refresh token cookie name is incorrect: got %v, expected: %v", refreshTokenCookie.Name, RefreshTokenCookieName)
+	}
+
+	if refreshTokenCookie.Value != "" {
+		t.Fatalf("refresh token cookie value should be empty: got %v", refreshTokenCookie.Value)
+	}
+
+	if refreshTokenCookie.MaxAge != -1 {
+		t.Fatalf("refresh token cookie max age should be -1, got %v", refreshTokenCookie.MaxAge)
+	}
+}
