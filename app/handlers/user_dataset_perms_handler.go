@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"backend/app/models"
-	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
 )
 
@@ -11,31 +10,21 @@ type DatasetToUserPermsRequest struct {
 }
 
 type UserDatasetPermsHandler struct {
-	DB        *gorm.DB
-	Validator *validator.Validate
+	DB *gorm.DB
 }
 
-func NewUserDatasetPermsHandler(db *gorm.DB, validator *validator.Validate) *UserDatasetPermsHandler {
+func NewUserDatasetPermsHandler(db *gorm.DB) *UserDatasetPermsHandler {
 	return &UserDatasetPermsHandler{
-		DB:        db,
-		Validator: validator,
+		DB: db,
 	}
 }
 
-func (u *UserDatasetPermsHandler) AddDatasetToUserPerms(userId uint, request *DatasetToUserPermsRequest) error {
-	if valErr := u.Validator.Struct(request); valErr != nil {
-		return valErr.(validator.ValidationErrors)
-	}
-
-	userDatasetPerm := &models.UserDataset{UserID: userId, DatasetID: request.DatasetId}
+func (u *UserDatasetPermsHandler) AddDatasetToUserPerms(userId uint, datasetId uint) error {
+	userDatasetPerm := &models.UserDataset{UserID: userId, DatasetID: datasetId}
 	return u.DB.Create(userDatasetPerm).Error
 }
 
-func (u *UserDatasetPermsHandler) DeleteDatasetToUserPerms(userId uint, request *DatasetToUserPermsRequest) error {
-	if valErr := u.Validator.Struct(request); valErr != nil {
-		return valErr.(validator.ValidationErrors)
-	}
-
-	userDatasetPerm := &models.UserDataset{UserID: userId, DatasetID: request.DatasetId}
+func (u *UserDatasetPermsHandler) DeleteDatasetToUserPerms(userId uint, datasetId uint) error {
+	userDatasetPerm := &models.UserDataset{UserID: userId, DatasetID: datasetId}
 	return u.DB.Delete(userDatasetPerm).Error
 }

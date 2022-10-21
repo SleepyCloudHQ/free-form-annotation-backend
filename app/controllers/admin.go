@@ -8,20 +8,28 @@ import (
 	"net/http"
 
 	utils "backend/app/controllers/utils"
+
+	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
 )
+
+type DatasetToUserPermsRequest struct {
+	DatasetId uint `json:"dataset_id" validate:"required"`
+}
 
 type AdminController struct {
 	tokenAuth               *auth.TokenAuth
 	usersHandler            *handlers.UsersHandler
 	userDatasetPermsHandler *handlers.UserDatasetPermsHandler
+	Validator               *validator.Validate
 }
 
-func NewAdminController(tokenAuth *auth.TokenAuth, usersHandler *handlers.UsersHandler, userDatasetPermsHandler *handlers.UserDatasetPermsHandler) *AdminController {
+func NewAdminController(tokenAuth *auth.TokenAuth, usersHandler *handlers.UsersHandler, userDatasetPermsHandler *handlers.UserDatasetPermsHandler, validator *validator.Validate) *AdminController {
 	return &AdminController{
 		tokenAuth:               tokenAuth,
 		usersHandler:            usersHandler,
 		userDatasetPermsHandler: userDatasetPermsHandler,
+		Validator:               validator,
 	}
 }
 
@@ -71,7 +79,12 @@ func (a *AdminController) postUserDatasetPerm(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	createErr := a.userDatasetPermsHandler.AddDatasetToUserPerms(uint(userId), createUserDatasetPermRequest)
+	if valErr := a.Validator.Struct(createUserDatasetPermRequest); valErr != nil {
+		utils.HandleCommonErrors(valErr.(validator.ValidationErrors), w)
+		return
+	}
+
+	createErr := a.userDatasetPermsHandler.AddDatasetToUserPerms(uint(userId), createUserDatasetPermRequest.DatasetId)
 	if createErr != nil {
 		utils.HandleCommonErrors(createErr, w)
 		return
@@ -89,7 +102,12 @@ func (a *AdminController) deleteUserDatasetPerm(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	deleteErr := a.userDatasetPermsHandler.DeleteDatasetToUserPerms(uint(userId), deleteUserDatasetPermRequest)
+	if valErr := a.Validator.Struct(deleteUserDatasetPermRequest); valErr != nil {
+		utils.HandleCommonErrors(valErr.(validator.ValidationErrors), w)
+		return
+	}
+
+	deleteErr := a.userDatasetPermsHandler.DeleteDatasetToUserPerms(uint(userId), deleteUserDatasetPermRequest.DatasetId)
 	if deleteErr != nil {
 		utils.HandleCommonErrors(deleteErr, w)
 		return

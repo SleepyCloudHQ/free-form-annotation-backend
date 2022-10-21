@@ -59,7 +59,7 @@ func (a *App) Initialize() {
 	a.DatasetsHandler = handlers.NewDatasetsHandler(db)
 	a.SamplesHandler = handlers.NewSamplesHandler(db)
 	a.UsersHandler = handlers.NewUsersHandler(db, a.validate)
-	a.UserDatasetPermsHandler = handlers.NewUserDatasetPermsHandler(db, a.validate)
+	a.UserDatasetPermsHandler = handlers.NewUserDatasetPermsHandler(db)
 
 	a.InitializeControllers()
 }
@@ -86,7 +86,7 @@ func (a *App) InitializeControllers() {
 	usersController.Init(userRouter)
 
 	adminRouter := a.Router.PathPrefix("/admin").Subrouter()
-	adminController := controllers.NewAdminController(a.TokenAuth, a.UsersHandler, a.UserDatasetPermsHandler)
+	adminController := controllers.NewAdminController(a.TokenAuth, a.UsersHandler, a.UserDatasetPermsHandler, a.validate)
 	adminController.Init(adminRouter)
 
 	datasetsRouter := a.Router.PathPrefix("/datasets").Subrouter()
