@@ -19,12 +19,12 @@ func setupDBForUserTests(t *testing.T) (*gorm.DB, func() error) {
 	}
 
 	if migrationErr := db.AutoMigrate(&models.User{}); migrationErr != nil {
-		t.Fatalf("failed to migrate user: %v", err)
+		t.Fatalf("failed to migrate user: %v", migrationErr)
 	}
 
 	sqlDB, sqlErr := db.DB()
 	if sqlErr != nil {
-		t.Fatalf("failed to obtain SQL DB: %v", err)
+		t.Fatalf("failed to obtain SQL DB: %v", sqlErr)
 	}
 	return db, sqlDB.Close
 }
