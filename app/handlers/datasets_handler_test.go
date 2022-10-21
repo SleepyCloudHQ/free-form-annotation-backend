@@ -69,3 +69,25 @@ func TestGetDatasets(t *testing.T) {
 		t.Fatal("returned datasets are not ordered by CreatedAt")
 	}
 }
+
+func TestGetDataset(t *testing.T) {
+	db, cleanup := setupDBForDatasetsHandlerTests(t)
+	defer cleanup()
+
+	datasets := []models.Dataset{
+		{Name: "dataset1", Type: models.EntityAnnotation, Model: gorm.Model{CreatedAt: time.Now().Add(-time.Hour)}},
+		{Name: "dataset2", Type: models.EntityAnnotation, Model: gorm.Model{CreatedAt: time.Now()}},
+	}
+
+	if result := db.Create(&datasets); result.Error != nil {
+		t.Fatalf("failed to create datasets: %v", result.Error)
+	}
+
+	returnedDataset, datasetErr := NewDatasetsHandler(db).GetDataset(datasets[1].ID)
+	if datasetErr != nil {
+		t.Fatalf("unexpected error fetching dataset: %v", datasetErr)
+	}
+	if returnedDataset.ID != datasets[1].ID {
+		t.Fatal("returned wrong dataset")
+	}
+}
