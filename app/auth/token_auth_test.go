@@ -127,6 +127,33 @@ func TestRefreshToken(t *testing.T) {
 	}
 }
 
+func TestExpiredRefreshToken(t *testing.T) {
+	db, cleanup := setupDBForTokenTests(t)
+	defer cleanup()
+
+	tokenAuth := NewTokenAuth(db)
+
+	userAuth := NewUserAuth(db)
+	user, userErr := userAuth.CreateUser("email@email.com", "password", models.AdminRole)
+	if userErr != nil {
+		t.Fatalf("failed to create user: %v", userErr)
+	}
+
+	authToken, tokenErr := tokenAuth.CreateAuthToken(user)
+	if tokenErr != nil {
+		t.Fatalf("failed to create auth token: %v", tokenErr)
+	}
+
+	if result := db.Model(authToken.RefreshToken).Update("expires_at", time.Now().Add(-time.Hour)); result.Error != nil {
+		t.Fatalf("failed to update auth token expiration time: %v", tokenErr)
+	}
+
+	_, refreshErr := tokenAuth.RefreshToken(authToken.RefreshToken.Token)
+	if !errors.Is(refreshErr, ErrTokenExpired) {
+		t.Fatalf("unexpected error returned: %v", refreshErr)
+	}
+}
+
 func TestCheckAuthToken(t *testing.T) {
 	db, cleanup := setupDBForTokenTests(t)
 	defer cleanup()
