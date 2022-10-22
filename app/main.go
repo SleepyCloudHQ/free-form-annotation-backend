@@ -25,16 +25,16 @@ import (
 )
 
 type App struct {
-	Router                  *mux.Router
-	DB                      *gorm.DB
+	router                  *mux.Router
+	db                      *gorm.DB
 	validate                *validator.Validate
-	TokenAuth               *auth.TokenAuth
-	UserAuth                *auth.UserAuth
-	AuthHandler             *handlers.AuthHandler
-	DatasetsHandler         *handlers.DatasetsHandler
-	SamplesHandler          *handlers.SamplesHandler
-	UsersHandler            *handlers.UsersHandler
-	UserDatasetPermsHandler *handlers.UserDatasetPermsHandler
+	tokenAuth               *auth.TokenAuth
+	userAuth                *auth.UserAuth
+	authHandler             *handlers.AuthHandler
+	datasetsHandler         *handlers.DatasetsHandler
+	samplesHandler          *handlers.SamplesHandler
+	usersHandler            *handlers.UsersHandler
+	userDatasetPermsHandler *handlers.UserDatasetPermsHandler
 }
 
 func (a *App) Initialize() {
@@ -49,17 +49,17 @@ func (a *App) Initialize() {
 
 	a.validate = validator.New()
 
-	a.DB = db
-	a.Router = mux.NewRouter()
+	a.db = db
+	a.router = mux.NewRouter()
 
-	a.TokenAuth = auth.NewTokenAuth(a.DB)
-	a.UserAuth = auth.NewUserAuth(a.DB)
+	a.tokenAuth = auth.NewTokenAuth(a.db)
+	a.userAuth = auth.NewUserAuth(a.db)
 
-	a.AuthHandler = handlers.NewAuthHandler(a.UserAuth, a.TokenAuth, a.validate)
-	a.DatasetsHandler = handlers.NewDatasetsHandler(db)
-	a.SamplesHandler = handlers.NewSamplesHandler(db)
-	a.UsersHandler = handlers.NewUsersHandler(db, a.validate)
-	a.UserDatasetPermsHandler = handlers.NewUserDatasetPermsHandler(db)
+	a.authHandler = handlers.NewAuthHandler(a.userAuth, a.tokenAuth)
+	a.datasetsHandler = handlers.NewDatasetsHandler(db)
+	a.samplesHandler = handlers.NewSamplesHandler(db)
+	a.usersHandler = handlers.NewUsersHandler(db, a.validate)
+	a.userDatasetPermsHandler = handlers.NewUserDatasetPermsHandler(db)
 
 	a.InitializeControllers()
 }
@@ -75,22 +75,22 @@ func (a *App) InitializeControllers() {
 	recoverHandler := mux_handlers.RecoveryHandler()
 	sentryHandler := sentryhttp.New(sentryhttp.Options{Repanic: true})
 
-	a.Router.Use(recoverHandler, sentryHandler.Handle, middlewares.JSONResponseMiddleware, cors)
+	a.router.Use(recoverHandler, sentryHandler.Handle, middlewares.JSONResponseMiddleware, cors)
 
-	authRouter := a.Router.PathPrefix("/auth").Subrouter()
-	authController := controllers.NewAuthController(a.TokenAuth, a.AuthHandler)
+	authRouter := a.router.PathPrefix("/auth").Subrouter()
+	authController := controllers.NewAuthController(a.tokenAuth, a.authHandler, a.validate)
 	authController.Init(authRouter)
 
-	userRouter := a.Router.PathPrefix("/user").Subrouter()
-	usersController := controllers.NewUsersController(a.TokenAuth)
+	userRouter := a.router.PathPrefix("/user").Subrouter()
+	usersController := controllers.NewUsersController(a.tokenAuth)
 	usersController.Init(userRouter)
 
-	adminRouter := a.Router.PathPrefix("/admin").Subrouter()
-	adminController := controllers.NewAdminController(a.TokenAuth, a.UsersHandler, a.UserDatasetPermsHandler, a.validate)
+	adminRouter := a.router.PathPrefix("/admin").Subrouter()
+	adminController := controllers.NewAdminController(a.tokenAuth, a.usersHandler, a.userDatasetPermsHandler, a.validate)
 	adminController.Init(adminRouter)
 
-	datasetsRouter := a.Router.PathPrefix("/datasets").Subrouter()
-	datasetsController := controllers.NewDatasetsController(a.TokenAuth, a.DatasetsHandler, a.SamplesHandler, a.DB)
+	datasetsRouter := a.router.PathPrefix("/datasets").Subrouter()
+	datasetsController := controllers.NewDatasetsController(a.tokenAuth, a.datasetsHandler, a.samplesHandler, a.db)
 	datasetsController.Init(datasetsRouter)
 }
 
@@ -102,7 +102,7 @@ func logRequest(handler http.Handler) http.Handler {
 }
 
 func (a *App) Run() {
-	log.Fatal(http.ListenAndServe(":8010", logRequest(a.Router)))
+	log.Fatal(http.ListenAndServe(":8010", logRequest(a.router)))
 }
 
 func checkLicence(lc *licence_checker.LicenceChecker) func() {
@@ -143,7 +143,7 @@ func main() {
 	a := App{}
 	a.Initialize()
 	a.Run()
-	sqlDB, err := a.DB.DB()
+	sqlDB, err := a.db.DB()
 	if err == nil {
 		sqlDB.Close()
 	}
