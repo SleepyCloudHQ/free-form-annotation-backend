@@ -4,6 +4,7 @@ import (
 	"backend/app/auth"
 	utils "backend/app/controllers/utils"
 	"backend/app/handlers"
+	"backend/app/middlewares"
 	"encoding/json"
 	"errors"
 	"log"
@@ -41,9 +42,10 @@ func NewAuthController(tokenAuth *auth.TokenAuth, authHandler *handlers.AuthHand
 }
 
 func (a *AuthController) Init(router *mux.Router) {
+	authTokenMiddleware := middlewares.AuthTokenMiddleware(a.tokenAuth)
 	router.HandleFunc("/login/", a.login).Methods("POST", "OPTIONS")
 	router.HandleFunc("/refresh-token/", a.refreshToken).Methods("POST", "OPTIONS")
-	router.Handle("/logout/", a.tokenAuth.AuthTokenMiddleware(http.HandlerFunc(a.logout))).Methods("POST", "OPTIONS")
+	router.Handle("/logout/", authTokenMiddleware(http.HandlerFunc(a.logout))).Methods("POST", "OPTIONS")
 }
 
 func (a *AuthController) login(w http.ResponseWriter, r *http.Request) {

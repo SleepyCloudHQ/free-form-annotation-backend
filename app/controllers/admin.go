@@ -34,7 +34,8 @@ func NewAdminController(tokenAuth *auth.TokenAuth, usersHandler *handlers.UsersH
 }
 
 func (a *AdminController) Init(router *mux.Router) {
-	router.Use(a.tokenAuth.AuthTokenMiddleware, middlewares.IsAdminMiddleware)
+	authTokenMiddleware := middlewares.AuthTokenMiddleware(a.tokenAuth)
+	router.Use(authTokenMiddleware, middlewares.IsAdminMiddleware)
 	router.HandleFunc("/users/", a.getUsers).Methods("GET", "OPTIONS")
 
 	adminUserManagementRouter := router.PathPrefix("/users/{userId:[0-9]+}").Subrouter()

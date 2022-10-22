@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"backend/app/auth"
+	"backend/app/middlewares"
 	"backend/app/models"
 	"encoding/json"
 	"net/http"
@@ -20,12 +21,13 @@ func NewUsersController(tokenAuth *auth.TokenAuth) *UsersController {
 }
 
 func (u *UsersController) Init(router *mux.Router) {
-	router.Use(u.tokenAuth.AuthTokenMiddleware)
+	authTokenMiddleware := middlewares.AuthTokenMiddleware(u.tokenAuth)
+	router.Use(authTokenMiddleware)
 	router.HandleFunc("/", u.getUser).Methods("GET", "OPTIONS")
 }
 
 func (u *UsersController) getUser(w http.ResponseWriter, r *http.Request) {
-	user := r.Context().Value(auth.UserContextKey).(*models.User)
+	user := r.Context().Value(middlewares.UserContextKey).(*models.User)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(user)
 }

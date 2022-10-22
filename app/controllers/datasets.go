@@ -36,7 +36,8 @@ func NewDatasetsController(tokenAuth *auth.TokenAuth, datasetsHandler *handlers.
 }
 
 func (d *DatasetsController) Init(router *mux.Router) {
-	router.Use(d.tokenAuth.AuthTokenMiddleware)
+	authTokenMiddleware := middlewares.AuthTokenMiddleware(d.tokenAuth)
+	router.Use(authTokenMiddleware)
 
 	router.HandleFunc("/", d.getDatasets).Methods("GET", "OPTIONS")
 	router.Handle("/", middlewares.IsAdminMiddleware(http.HandlerFunc(d.postDataset))).Methods("POST", "OPTIONS")
@@ -93,7 +94,7 @@ func (d *DatasetsController) exportDataset(w http.ResponseWriter, r *http.Reques
 }
 
 func (d *DatasetsController) getDatasets(w http.ResponseWriter, r *http.Request) {
-	user := r.Context().Value(auth.UserContextKey).(*models.User)
+	user := r.Context().Value(middlewares.UserContextKey).(*models.User)
 
 	var datasets []*handlers.DatasetData
 	if user.Role == models.AdminRole {
@@ -226,7 +227,7 @@ func (d *DatasetsController) getSamplesWithStatus(w http.ResponseWriter, r *http
 
 func (d *DatasetsController) assignNextSample(w http.ResponseWriter, r *http.Request) {
 	datasetId := r.Context().Value(middlewares.DatasetIdContextKey).(int)
-	user := r.Context().Value(auth.UserContextKey).(*models.User)
+	user := r.Context().Value(middlewares.UserContextKey).(*models.User)
 
 	sample, sampleErr := d.samplesHandler.AssignNextSample(uint(datasetId), user.ID)
 	if sampleErr != nil {

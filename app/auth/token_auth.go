@@ -1,9 +1,7 @@
 package auth
 
 import (
-	utils "backend/app/controllers/utils"
 	"backend/app/models"
-	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
@@ -18,10 +16,6 @@ var ErrInvalidToken = errors.New("invalid token provided")
 
 const AuthTokenCookieName = "auth_token"
 const RefreshTokenCookieName = "refresh_token"
-
-type ContextKey string
-
-const UserContextKey ContextKey = "user"
 
 type TokenAuth struct {
 	DB *gorm.DB
@@ -99,27 +93,6 @@ func (a *TokenAuth) RefreshToken(token string) (*models.AuthToken, error) {
 	}
 
 	return a.CreateAuthToken(&authToken.User)
-}
-
-func (a *TokenAuth) AuthTokenMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie(AuthTokenCookieName)
-		if err != nil {
-			w.WriteHeader(http.StatusUnauthorized)
-			utils.WriteError(errors.New("Unauthorized"), w)
-			return
-		}
-
-		user, authErr := a.CheckAuthToken(cookie.Value)
-		if authErr != nil {
-			w.WriteHeader(http.StatusUnauthorized)
-			utils.WriteError(errors.New("Unauthorized"), w)
-			return
-		}
-
-		ctx := context.WithValue(r.Context(), UserContextKey, user)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
 }
 
 func (a *TokenAuth) CreateAuthCookies(authToken *models.AuthToken) (*http.Cookie, *http.Cookie) {
