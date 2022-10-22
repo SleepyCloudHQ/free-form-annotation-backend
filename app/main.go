@@ -43,8 +43,8 @@ func (a *App) Initialize() {
 		log.Fatal(err)
 	}
 
-	if jointTableErr := db.SetupJoinTable(&models.User{}, "Datasets", &models.UserDataset{}); jointTableErr != nil {
-		log.Fatal(jointTableErr)
+	if joinTableErr := db.SetupJoinTable(&models.User{}, "Datasets", &models.UserDataset{}); joinTableErr != nil {
+		log.Fatal(joinTableErr)
 	}
 
 	a.validate = validator.New()
