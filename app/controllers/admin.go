@@ -4,6 +4,7 @@ import (
 	"backend/app/auth"
 	"backend/app/handlers"
 	"backend/app/middlewares"
+	"backend/app/models"
 	"encoding/json"
 	"net/http"
 
@@ -15,6 +16,10 @@ import (
 
 type DatasetToUserPermsRequest struct {
 	DatasetId uint `json:"dataset_id" validate:"required"`
+}
+
+type PatchUserRoleRequest struct {
+	Role models.UserRole `json:"role" validate:"required"`
 }
 
 type AdminController struct {
@@ -53,14 +58,26 @@ func (a *AdminController) getUsers(w http.ResponseWriter, r *http.Request) {
 func (a *AdminController) patchUserRole(w http.ResponseWriter, r *http.Request) {
 	userId := r.Context().Value(middlewares.UserIdContextKey).(int)
 
-	patchRoleRequest := &handlers.PatchUserRoleRequest{}
+	patchRoleRequest := &PatchUserRoleRequest{}
 	if err := json.NewDecoder(r.Body).Decode(patchRoleRequest); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		utils.WriteError(err, w)
 		return
 	}
 
-	user, patchErr := a.usersHandler.PatchUserRole(uint(userId), patchRoleRequest)
+	if valErr := a.Validator.Struct(patchRoleRequest); valErr != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		utils.WriteError(valErr.(validator.ValidationErrors), w)
+		return
+	}
+
+	if valErr := patchRoleRequest.Role.IsValid(); valErr != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		utils.WriteError(valErr, w)
+		return
+	}
+
+	user, patchErr := a.usersHandler.PatchUserRole(uint(userId), patchRoleRequest.Role)
 	if patchErr != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		utils.WriteError(patchErr, w)

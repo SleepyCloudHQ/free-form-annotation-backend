@@ -58,7 +58,7 @@ func (a *App) Initialize() {
 	a.authHandler = handlers.NewAuthHandler(a.userAuth, a.tokenAuth)
 	a.datasetsHandler = handlers.NewDatasetsHandler(db)
 	a.samplesHandler = handlers.NewSamplesHandler(db)
-	a.usersHandler = handlers.NewUsersHandler(db, a.validate)
+	a.usersHandler = handlers.NewUsersHandler(db)
 	a.userDatasetPermsHandler = handlers.NewUserDatasetPermsHandler(db)
 
 	a.InitializeControllers()
