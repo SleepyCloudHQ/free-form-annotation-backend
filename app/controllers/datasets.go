@@ -251,22 +251,22 @@ func (d *DatasetsController) patchSample(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	patchRequest := &handlers.PatchSampleRequest{}
-	if err := json.NewDecoder(r.Body).Decode(patchRequest); err != nil {
+	updateData := &handlers.UpdateSampleData{}
+	if err := json.NewDecoder(r.Body).Decode(updateData); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		utils.WriteError(err, w)
 		return
 	}
 
 	// check whether status is a valid value
-	if !patchRequest.Status.Valid {
-		if statusErr := models.StatusType(patchRequest.Status.String).IsValid(); statusErr != nil {
+	if !updateData.Status.Valid {
+		if statusErr := models.StatusType(updateData.Status.String).IsValid(); statusErr != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			utils.WriteError(statusErr, w)
 		}
 	}
 
-	sample, sampleErr := d.samplesHandler.PatchSample(uint(datasetId), uint(sampleId), patchRequest)
+	sample, sampleErr := d.samplesHandler.PatchSample(uint(datasetId), uint(sampleId), updateData)
 	if sampleErr != nil {
 		utils.HandleCommonErrors(sampleErr, w)
 		return
