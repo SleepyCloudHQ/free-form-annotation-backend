@@ -38,6 +38,10 @@ func setupDBForAuthHandlerTests(t *testing.T) (*gorm.DB, func() error) {
 	return db, sqlDB.Close
 }
 
+func TestFailing(t *testing.T) {
+	t.Fatal("fail")
+}
+
 func TestRegister(t *testing.T) {
 	db, cleanup := setupDBForAuthHandlerTests(t)
 	defer cleanup()
