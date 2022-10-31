@@ -90,7 +90,7 @@ func (a *App) InitializeControllers() {
 	adminController.Init(adminRouter)
 
 	datasetsRouter := a.router.PathPrefix("/datasets").Subrouter()
-	datasetsController := controllers.NewDatasetsController(a.tokenAuth, a.datasetsHandler, a.samplesHandler, a.db)
+	datasetsController := controllers.NewDatasetsController(a.tokenAuth, a.datasetsHandler, a.samplesHandler, a.userDatasetPermsHandler, a.db)
 	datasetsController.Init(datasetsRouter)
 }
 

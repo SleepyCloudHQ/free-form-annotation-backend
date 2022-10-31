@@ -20,18 +20,20 @@ import (
 )
 
 type DatasetsController struct {
-	tokenAuth       *auth.TokenAuth
-	datasetsHandler *handlers.DatasetsHandler
-	samplesHandler  *handlers.SamplesHandler
-	db              *gorm.DB
+	tokenAuth               *auth.TokenAuth
+	datasetsHandler         *handlers.DatasetsHandler
+	samplesHandler          *handlers.SamplesHandler
+	userDatasetPermsHandler *handlers.UserDatasetPermsHandler
+	db                      *gorm.DB
 }
 
-func NewDatasetsController(tokenAuth *auth.TokenAuth, datasetsHandler *handlers.DatasetsHandler, samplesHandler *handlers.SamplesHandler, db *gorm.DB) *DatasetsController {
+func NewDatasetsController(tokenAuth *auth.TokenAuth, datasetsHandler *handlers.DatasetsHandler, samplesHandler *handlers.SamplesHandler, userDatasetPermsHandler *handlers.UserDatasetPermsHandler, db *gorm.DB) *DatasetsController {
 	return &DatasetsController{
-		tokenAuth:       tokenAuth,
-		datasetsHandler: datasetsHandler,
-		samplesHandler:  samplesHandler,
-		db:              db,
+		tokenAuth:               tokenAuth,
+		datasetsHandler:         datasetsHandler,
+		samplesHandler:          samplesHandler,
+		userDatasetPermsHandler: userDatasetPermsHandler,
+		db:                      db,
 	}
 }
 
@@ -43,7 +45,7 @@ func (d *DatasetsController) Init(router *mux.Router) {
 	router.Handle("/", middlewares.IsAdminMiddleware(http.HandlerFunc(d.postDataset))).Methods("POST", "OPTIONS")
 
 	datasetRouter := router.PathPrefix("/{datasetId:[0-9]+}").Subrouter()
-	datasetPermsMiddleware := middlewares.GetDatasetPermsMiddleware(d.db)
+	datasetPermsMiddleware := middlewares.GetDatasetPermsMiddleware(d.userDatasetPermsHandler)
 	datasetRouter.Use(middlewares.ParseDatasetIdMiddleware, datasetPermsMiddleware)
 
 	datasetRouter.HandleFunc("/", d.getDataset).Methods("GET", "OPTIONS")
