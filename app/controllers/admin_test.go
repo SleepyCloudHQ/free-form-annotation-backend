@@ -131,11 +131,18 @@ func TestPatchRolesWithoutAuth(t *testing.T) {
 	}
 	is.NoErr(db.Create(&users).Error)
 
-	url := fmt.Sprintf("/users/%v/roles/", users[0].ID)
-	req := httptest.NewRequest("PATCH", url, nil)
+	url := fmt.Sprintf("/users/%v/roles/", users[1].ID)
+	requestBody := &PatchUserRoleRequest{Role: models.AdminRole}
+	bodyBytes, marshalErr := json.Marshal(requestBody)
+	is.NoErr(marshalErr)
+	req := httptest.NewRequest("PATCH", url, bytes.NewReader(bodyBytes))
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 	is.Equal(rr.Code, http.StatusUnauthorized)
+
+	refreshedUser := &models.User{}
+	is.NoErr(db.First(refreshedUser, users[1].ID).Error)
+	is.Equal(refreshedUser.Role, models.AnnotatorRole)
 }
 
 func TestPatchRolesNonExistingUser(t *testing.T) {
@@ -219,4 +226,72 @@ func TestPatchRolesAsAnnotator(t *testing.T) {
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 	is.Equal(rr.Code, http.StatusUnauthorized)
+
+	refreshedUser := &models.User{}
+	is.NoErr(db.First(refreshedUser, annotator.ID).Error)
+	is.Equal(refreshedUser.Role, models.AnnotatorRole)
+}
+
+func TestPatchRolesInvalidRequest(t *testing.T) {
+	db, cleanup, router := setup(t)
+	defer cleanup()
+	is := is.New(t)
+
+	users := []models.User{
+		{Email: "user1", Role: models.AdminRole},
+		{Email: "user2", Role: models.AnnotatorRole},
+	}
+	is.NoErr(db.Create(&users).Error)
+
+	tokenAuth := auth.NewTokenAuth(db)
+	authToken, tokenErr := tokenAuth.CreateAuthToken(&users[0])
+	is.NoErr(tokenErr)
+	authCookie, _ := tokenAuth.CreateAuthCookies(authToken)
+
+	url := fmt.Sprintf("/users/%v/roles/", users[1].ID)
+	requestBody := &PatchUserRoleRequest{Role: "invalid role"}
+	bodyBytes, marshalErr := json.Marshal(requestBody)
+	is.NoErr(marshalErr)
+
+	req := httptest.NewRequest("PATCH", url, bytes.NewReader(bodyBytes))
+	req.AddCookie(authCookie)
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+	is.Equal(rr.Code, http.StatusBadRequest)
+
+	refreshedUser := &models.User{}
+	is.NoErr(db.First(refreshedUser, users[1].ID).Error)
+	is.Equal(refreshedUser.Role, models.AnnotatorRole)
+}
+
+func TestPatchRolesInvalidRequestMissingRole(t *testing.T) {
+	db, cleanup, router := setup(t)
+	defer cleanup()
+	is := is.New(t)
+
+	users := []models.User{
+		{Email: "user1", Role: models.AdminRole},
+		{Email: "user2", Role: models.AnnotatorRole},
+	}
+	is.NoErr(db.Create(&users).Error)
+
+	tokenAuth := auth.NewTokenAuth(db)
+	authToken, tokenErr := tokenAuth.CreateAuthToken(&users[0])
+	is.NoErr(tokenErr)
+	authCookie, _ := tokenAuth.CreateAuthCookies(authToken)
+
+	url := fmt.Sprintf("/users/%v/roles/", users[1].ID)
+	requestBody := &PatchUserRoleRequest{}
+	bodyBytes, marshalErr := json.Marshal(requestBody)
+	is.NoErr(marshalErr)
+
+	req := httptest.NewRequest("PATCH", url, bytes.NewReader(bodyBytes))
+	req.AddCookie(authCookie)
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+	is.Equal(rr.Code, http.StatusBadRequest)
+
+	refreshedUser := &models.User{}
+	is.NoErr(db.First(refreshedUser, users[1].ID).Error)
+	is.Equal(refreshedUser.Role, models.AnnotatorRole)
 }
