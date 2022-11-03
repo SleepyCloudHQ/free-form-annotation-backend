@@ -7,10 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-type DatasetToUserPermsRequest struct {
-	DatasetId uint `json:"dataset_id" validate:"required"`
-}
-
 type UserDatasetPermsHandler struct {
 	db *gorm.DB
 }

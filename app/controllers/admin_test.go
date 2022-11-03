@@ -295,3 +295,257 @@ func TestPatchRolesInvalidRequestMissingRole(t *testing.T) {
 	is.NoErr(db.First(refreshedUser, users[1].ID).Error)
 	is.Equal(refreshedUser.Role, models.AnnotatorRole)
 }
+
+func TestPostUserDatasetPermWithoutAuth(t *testing.T) {
+	db, cleanup, router := setup(t)
+	defer cleanup()
+	is := is.New(t)
+
+	users := []models.User{
+		{Email: "user2", Role: models.AnnotatorRole},
+	}
+	is.NoErr(db.Create(&users).Error)
+
+	url := fmt.Sprintf("/users/%v/dataset-perms/", users[0].ID)
+	requestBody := &DatasetToUserPermsRequest{DatasetId: 0}
+	bodyBytes, marshalErr := json.Marshal(requestBody)
+	is.NoErr(marshalErr)
+	req := httptest.NewRequest("POST", url, bytes.NewReader(bodyBytes))
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+	is.Equal(rr.Code, http.StatusUnauthorized)
+
+	var count int64
+	is.NoErr(db.Model(&models.UserDataset{}).Count(&count).Error)
+	is.Equal(count, int64(0))
+}
+
+func TestPostUserDatasetPermAsAnnotator(t *testing.T) {
+	db, cleanup, router := setup(t)
+	defer cleanup()
+	is := is.New(t)
+
+	annotator := models.User{Email: "user2", Role: models.AnnotatorRole}
+	is.NoErr(db.Create(&annotator).Error)
+
+	tokenAuth := auth.NewTokenAuth(db)
+	authToken, tokenErr := tokenAuth.CreateAuthToken(&annotator)
+	is.NoErr(tokenErr)
+	authCookie, _ := tokenAuth.CreateAuthCookies(authToken)
+
+	url := fmt.Sprintf("/users/%v/dataset-perms/", annotator.ID)
+	requestBody := &DatasetToUserPermsRequest{DatasetId: 0}
+	bodyBytes, marshalErr := json.Marshal(requestBody)
+
+	is.NoErr(marshalErr)
+	req := httptest.NewRequest("POST", url, bytes.NewReader(bodyBytes))
+	req.AddCookie(authCookie)
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+	is.Equal(rr.Code, http.StatusUnauthorized)
+
+	var count int64
+	is.NoErr(db.Model(&models.UserDataset{}).Count(&count).Error)
+	is.Equal(count, int64(0))
+}
+
+func TestPostUserDatasetPermInvalidRequest(t *testing.T) {
+	db, cleanup, router := setup(t)
+	defer cleanup()
+	is := is.New(t)
+
+	admin := models.User{Email: "user2", Role: models.AdminRole}
+	is.NoErr(db.Create(&admin).Error)
+
+	tokenAuth := auth.NewTokenAuth(db)
+	authToken, tokenErr := tokenAuth.CreateAuthToken(&admin)
+	is.NoErr(tokenErr)
+	authCookie, _ := tokenAuth.CreateAuthCookies(authToken)
+
+	url := fmt.Sprintf("/users/%v/dataset-perms/", admin.ID)
+
+	// invalid request - no dataset id specified
+	requestBody := &DatasetToUserPermsRequest{}
+	bodyBytes, marshalErr := json.Marshal(requestBody)
+
+	is.NoErr(marshalErr)
+	req := httptest.NewRequest("POST", url, bytes.NewReader(bodyBytes))
+	req.AddCookie(authCookie)
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+	is.Equal(rr.Code, http.StatusBadRequest)
+
+	var count int64
+	is.NoErr(db.Model(&models.UserDataset{}).Count(&count).Error)
+	is.Equal(count, int64(0))
+}
+
+func TestPostUserDatasetPerm(t *testing.T) {
+	db, cleanup, router := setup(t)
+	defer cleanup()
+	is := is.New(t)
+
+	admin := models.User{Email: "user2", Role: models.AdminRole}
+	is.NoErr(db.Create(&admin).Error)
+
+	tokenAuth := auth.NewTokenAuth(db)
+	authToken, tokenErr := tokenAuth.CreateAuthToken(&admin)
+	is.NoErr(tokenErr)
+	authCookie, _ := tokenAuth.CreateAuthCookies(authToken)
+
+	url := fmt.Sprintf("/users/%v/dataset-perms/", admin.ID)
+	requestBody := &DatasetToUserPermsRequest{DatasetId: 1}
+	bodyBytes, marshalErr := json.Marshal(requestBody)
+
+	is.NoErr(marshalErr)
+	req := httptest.NewRequest("POST", url, bytes.NewReader(bodyBytes))
+	req.AddCookie(authCookie)
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+	is.Equal(rr.Code, http.StatusCreated)
+
+	var count int64
+	is.NoErr(db.Model(&models.UserDataset{}).Count(&count).Error)
+	is.Equal(count, int64(1))
+}
+
+func TestDeleteUserDatasetPermWithoutAuth(t *testing.T) {
+	db, cleanup, router := setup(t)
+	defer cleanup()
+	is := is.New(t)
+
+	users := []models.User{
+		{Email: "user2", Role: models.AnnotatorRole},
+	}
+	is.NoErr(db.Create(&users).Error)
+
+	url := fmt.Sprintf("/users/%v/dataset-perms/", users[0].ID)
+	requestBody := &DatasetToUserPermsRequest{DatasetId: 0}
+	bodyBytes, marshalErr := json.Marshal(requestBody)
+	is.NoErr(marshalErr)
+	req := httptest.NewRequest("DELETE", url, bytes.NewReader(bodyBytes))
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+	is.Equal(rr.Code, http.StatusUnauthorized)
+
+	var count int64
+	is.NoErr(db.Model(&models.UserDataset{}).Count(&count).Error)
+	is.Equal(count, int64(0))
+}
+
+func TestDeleteUserDatasetPermAsAnnotator(t *testing.T) {
+	db, cleanup, router := setup(t)
+	defer cleanup()
+	is := is.New(t)
+
+	annotator := models.User{Email: "user2", Role: models.AnnotatorRole}
+	is.NoErr(db.Create(&annotator).Error)
+
+	tokenAuth := auth.NewTokenAuth(db)
+	authToken, tokenErr := tokenAuth.CreateAuthToken(&annotator)
+	is.NoErr(tokenErr)
+	authCookie, _ := tokenAuth.CreateAuthCookies(authToken)
+
+	url := fmt.Sprintf("/users/%v/dataset-perms/", annotator.ID)
+	requestBody := &DatasetToUserPermsRequest{DatasetId: 0}
+	bodyBytes, marshalErr := json.Marshal(requestBody)
+
+	is.NoErr(marshalErr)
+	req := httptest.NewRequest("DELETE", url, bytes.NewReader(bodyBytes))
+	req.AddCookie(authCookie)
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+	is.Equal(rr.Code, http.StatusUnauthorized)
+
+	var count int64
+	is.NoErr(db.Model(&models.UserDataset{}).Count(&count).Error)
+	is.Equal(count, int64(0))
+}
+
+func TestDeleteUserDatasetPermInvalidRequest(t *testing.T) {
+	db, cleanup, router := setup(t)
+	defer cleanup()
+	is := is.New(t)
+
+	admin := models.User{Email: "user2", Role: models.AdminRole}
+	is.NoErr(db.Create(&admin).Error)
+
+	tokenAuth := auth.NewTokenAuth(db)
+	authToken, tokenErr := tokenAuth.CreateAuthToken(&admin)
+	is.NoErr(tokenErr)
+	authCookie, _ := tokenAuth.CreateAuthCookies(authToken)
+
+	url := fmt.Sprintf("/users/%v/dataset-perms/", admin.ID)
+
+	// invalid request - no dataset id specified
+	requestBody := &DatasetToUserPermsRequest{}
+	bodyBytes, marshalErr := json.Marshal(requestBody)
+
+	is.NoErr(marshalErr)
+	req := httptest.NewRequest("DELETE", url, bytes.NewReader(bodyBytes))
+	req.AddCookie(authCookie)
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+	is.Equal(rr.Code, http.StatusBadRequest)
+
+	var count int64
+	is.NoErr(db.Model(&models.UserDataset{}).Count(&count).Error)
+	is.Equal(count, int64(0))
+}
+
+func TestDeleteNonExistentUserDatasetPerm(t *testing.T) {
+	db, cleanup, router := setup(t)
+	defer cleanup()
+	is := is.New(t)
+
+	admin := models.User{Email: "user2", Role: models.AdminRole}
+	is.NoErr(db.Create(&admin).Error)
+
+	tokenAuth := auth.NewTokenAuth(db)
+	authToken, tokenErr := tokenAuth.CreateAuthToken(&admin)
+	is.NoErr(tokenErr)
+	authCookie, _ := tokenAuth.CreateAuthCookies(authToken)
+
+	url := fmt.Sprintf("/users/%v/dataset-perms/", admin.ID)
+	requestBody := &DatasetToUserPermsRequest{DatasetId: 1}
+	bodyBytes, marshalErr := json.Marshal(requestBody)
+
+	is.NoErr(marshalErr)
+	req := httptest.NewRequest("DELETE", url, bytes.NewReader(bodyBytes))
+	req.AddCookie(authCookie)
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+	is.Equal(rr.Code, http.StatusNoContent)
+}
+
+func TestDeleteUserDatasetPerm(t *testing.T) {
+	db, cleanup, router := setup(t)
+	defer cleanup()
+	is := is.New(t)
+
+	admin := models.User{Email: "user2", Role: models.AdminRole}
+	is.NoErr(db.Create(&admin).Error)
+
+	perm := &models.UserDataset{UserID: admin.ID, DatasetID: 1}
+	is.NoErr(db.Create(perm).Error)
+
+	tokenAuth := auth.NewTokenAuth(db)
+	authToken, tokenErr := tokenAuth.CreateAuthToken(&admin)
+	is.NoErr(tokenErr)
+	authCookie, _ := tokenAuth.CreateAuthCookies(authToken)
+
+	url := fmt.Sprintf("/users/%v/dataset-perms/", admin.ID)
+	requestBody := &DatasetToUserPermsRequest{DatasetId: perm.DatasetID}
+	bodyBytes, marshalErr := json.Marshal(requestBody)
+
+	is.NoErr(marshalErr)
+	req := httptest.NewRequest("DELETE", url, bytes.NewReader(bodyBytes))
+	req.AddCookie(authCookie)
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+	is.Equal(rr.Code, http.StatusNoContent)
+
+	var count int64
+	is.NoErr(db.Model(&models.UserDataset{}).Count(&count).Error)
+	is.Equal(count, int64(0))
+}

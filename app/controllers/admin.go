@@ -90,7 +90,7 @@ func (a *AdminController) patchUserRole(w http.ResponseWriter, r *http.Request) 
 
 func (a *AdminController) postUserDatasetPerm(w http.ResponseWriter, r *http.Request) {
 	userId := r.Context().Value(middlewares.UserIdContextKey).(int)
-	createUserDatasetPermRequest := &handlers.DatasetToUserPermsRequest{}
+	createUserDatasetPermRequest := &DatasetToUserPermsRequest{}
 	if err := json.NewDecoder(r.Body).Decode(createUserDatasetPermRequest); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		utils.WriteError(err, w)
@@ -98,7 +98,8 @@ func (a *AdminController) postUserDatasetPerm(w http.ResponseWriter, r *http.Req
 	}
 
 	if valErr := a.Validator.Struct(createUserDatasetPermRequest); valErr != nil {
-		utils.HandleCommonErrors(valErr.(validator.ValidationErrors), w)
+		w.WriteHeader(http.StatusBadRequest)
+		utils.WriteError(valErr.(validator.ValidationErrors), w)
 		return
 	}
 
@@ -113,7 +114,7 @@ func (a *AdminController) postUserDatasetPerm(w http.ResponseWriter, r *http.Req
 
 func (a *AdminController) deleteUserDatasetPerm(w http.ResponseWriter, r *http.Request) {
 	userId := r.Context().Value(middlewares.UserIdContextKey).(int)
-	deleteUserDatasetPermRequest := &handlers.DatasetToUserPermsRequest{}
+	deleteUserDatasetPermRequest := &DatasetToUserPermsRequest{}
 	if err := json.NewDecoder(r.Body).Decode(deleteUserDatasetPermRequest); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		utils.WriteError(err, w)
@@ -121,7 +122,8 @@ func (a *AdminController) deleteUserDatasetPerm(w http.ResponseWriter, r *http.R
 	}
 
 	if valErr := a.Validator.Struct(deleteUserDatasetPermRequest); valErr != nil {
-		utils.HandleCommonErrors(valErr.(validator.ValidationErrors), w)
+		w.WriteHeader(http.StatusBadRequest)
+		utils.WriteError(valErr.(validator.ValidationErrors), w)
 		return
 	}
 
