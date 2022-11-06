@@ -27,5 +27,6 @@ func WriteError(err error, w http.ResponseWriter) {
 	errResponse := &ErrorResponse{
 		ErrorMessage: err.Error(),
 	}
+
 	json.NewEncoder(w).Encode(errResponse)
 }

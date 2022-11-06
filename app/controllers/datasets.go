@@ -20,29 +20,32 @@ import (
 )
 
 type DatasetsController struct {
-	tokenAuth       *auth.TokenAuth
-	datasetsHandler *handlers.DatasetsHandler
-	samplesHandler  *handlers.SamplesHandler
-	db              *gorm.DB
+	tokenAuth               *auth.TokenAuth
+	datasetsHandler         *handlers.DatasetsHandler
+	samplesHandler          *handlers.SamplesHandler
+	userDatasetPermsHandler *handlers.UserDatasetPermsHandler
+	db                      *gorm.DB
 }
 
-func NewDatasetsController(tokenAuth *auth.TokenAuth, datasetsHandler *handlers.DatasetsHandler, samplesHandler *handlers.SamplesHandler, db *gorm.DB) *DatasetsController {
+func NewDatasetsController(tokenAuth *auth.TokenAuth, datasetsHandler *handlers.DatasetsHandler, samplesHandler *handlers.SamplesHandler, userDatasetPermsHandler *handlers.UserDatasetPermsHandler, db *gorm.DB) *DatasetsController {
 	return &DatasetsController{
-		tokenAuth:       tokenAuth,
-		datasetsHandler: datasetsHandler,
-		samplesHandler:  samplesHandler,
-		db:              db,
+		tokenAuth:               tokenAuth,
+		datasetsHandler:         datasetsHandler,
+		samplesHandler:          samplesHandler,
+		userDatasetPermsHandler: userDatasetPermsHandler,
+		db:                      db,
 	}
 }
 
 func (d *DatasetsController) Init(router *mux.Router) {
-	router.Use(d.tokenAuth.AuthTokenMiddleware)
+	authTokenMiddleware := middlewares.AuthTokenMiddleware(d.tokenAuth)
+	router.Use(authTokenMiddleware)
 
 	router.HandleFunc("/", d.getDatasets).Methods("GET", "OPTIONS")
 	router.Handle("/", middlewares.IsAdminMiddleware(http.HandlerFunc(d.postDataset))).Methods("POST", "OPTIONS")
 
 	datasetRouter := router.PathPrefix("/{datasetId:[0-9]+}").Subrouter()
-	datasetPermsMiddleware := middlewares.GetDatasetPermsMiddleware(d.db)
+	datasetPermsMiddleware := middlewares.GetDatasetPermsMiddleware(d.userDatasetPermsHandler)
 	datasetRouter.Use(middlewares.ParseDatasetIdMiddleware, datasetPermsMiddleware)
 
 	datasetRouter.HandleFunc("/", d.getDataset).Methods("GET", "OPTIONS")
@@ -93,7 +96,7 @@ func (d *DatasetsController) exportDataset(w http.ResponseWriter, r *http.Reques
 }
 
 func (d *DatasetsController) getDatasets(w http.ResponseWriter, r *http.Request) {
-	user := r.Context().Value(auth.UserContextKey).(*models.User)
+	user := r.Context().Value(middlewares.UserContextKey).(*models.User)
 
 	var datasets []*handlers.DatasetData
 	if user.Role == models.AdminRole {
@@ -226,7 +229,7 @@ func (d *DatasetsController) getSamplesWithStatus(w http.ResponseWriter, r *http
 
 func (d *DatasetsController) assignNextSample(w http.ResponseWriter, r *http.Request) {
 	datasetId := r.Context().Value(middlewares.DatasetIdContextKey).(int)
-	user := r.Context().Value(auth.UserContextKey).(*models.User)
+	user := r.Context().Value(middlewares.UserContextKey).(*models.User)
 
 	sample, sampleErr := d.samplesHandler.AssignNextSample(uint(datasetId), user.ID)
 	if sampleErr != nil {
@@ -250,22 +253,22 @@ func (d *DatasetsController) patchSample(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	patchRequest := &handlers.PatchSampleRequest{}
-	if err := json.NewDecoder(r.Body).Decode(patchRequest); err != nil {
+	updateData := &handlers.UpdateSampleData{}
+	if err := json.NewDecoder(r.Body).Decode(updateData); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		utils.WriteError(err, w)
 		return
 	}
 
 	// check whether status is a valid value
-	if !patchRequest.Status.Valid {
-		if statusErr := models.StatusType(patchRequest.Status.String).IsValid(); statusErr != nil {
+	if !updateData.Status.Valid {
+		if statusErr := models.StatusType(updateData.Status.String).IsValid(); statusErr != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			utils.WriteError(statusErr, w)
 		}
 	}
 
-	sample, sampleErr := d.samplesHandler.PatchSample(uint(datasetId), uint(sampleId), patchRequest)
+	sample, sampleErr := d.samplesHandler.PatchSample(uint(datasetId), uint(sampleId), updateData)
 	if sampleErr != nil {
 		utils.HandleCommonErrors(sampleErr, w)
 		return

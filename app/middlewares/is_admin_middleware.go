@@ -1,7 +1,6 @@
 package middlewares
 
 import (
-	"backend/app/auth"
 	utils "backend/app/controllers/utils"
 	"backend/app/models"
 	"errors"
@@ -10,8 +9,8 @@ import (
 
 func IsAdminMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user := r.Context().Value(auth.UserContextKey).(*models.User)
-		if user != nil && user.Role == models.AdminRole {
+		user, ok := r.Context().Value(UserContextKey).(*models.User)
+		if ok && user != nil && user.Role == models.AdminRole {
 			next.ServeHTTP(w, r)
 		} else {
 			w.WriteHeader(http.StatusUnauthorized)

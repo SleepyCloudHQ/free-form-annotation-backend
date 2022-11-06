@@ -2,40 +2,44 @@ package handlers
 
 import (
 	"backend/app/models"
-	"github.com/go-playground/validator/v10"
+	"errors"
+
 	"gorm.io/gorm"
 )
 
-type DatasetToUserPermsRequest struct {
-	DatasetId uint `json:"dataset_id" validate:"required"`
-}
-
 type UserDatasetPermsHandler struct {
-	DB        *gorm.DB
-	Validator *validator.Validate
+	db *gorm.DB
 }
 
-func NewUserDatasetPermsHandler(db *gorm.DB, validator *validator.Validate) *UserDatasetPermsHandler {
+func NewUserDatasetPermsHandler(db *gorm.DB) *UserDatasetPermsHandler {
 	return &UserDatasetPermsHandler{
-		DB:        db,
-		Validator: validator,
+		db: db,
 	}
 }
 
-func (u *UserDatasetPermsHandler) AddDatasetToUserPerms(userId uint, request *DatasetToUserPermsRequest) error {
-	if valErr := u.Validator.Struct(request); valErr != nil {
-		return valErr.(validator.ValidationErrors)
-	}
-
-	userDatasetPerm := &models.UserDataset{UserID: userId, DatasetID: request.DatasetId}
-	return u.DB.Create(userDatasetPerm).Error
+func (u *UserDatasetPermsHandler) AddDatasetToUserPerms(userId uint, datasetId uint) error {
+	userDatasetPerm := &models.UserDataset{UserID: userId, DatasetID: datasetId}
+	return u.db.Create(userDatasetPerm).Error
 }
 
-func (u *UserDatasetPermsHandler) DeleteDatasetToUserPerms(userId uint, request *DatasetToUserPermsRequest) error {
-	if valErr := u.Validator.Struct(request); valErr != nil {
-		return valErr.(validator.ValidationErrors)
+func (u *UserDatasetPermsHandler) DeleteDatasetToUserPerms(userId uint, datasetId uint) error {
+	userDatasetPerm := &models.UserDataset{UserID: userId, DatasetID: datasetId}
+	return u.db.Delete(userDatasetPerm).Error
+}
+
+func (u *UserDatasetPermsHandler) UserHasDatasetPerms(userId uint, datasetId uint) (bool, error) {
+	// check if the user has been assigned to the given dataset
+	userDataset := &models.UserDataset{
+		UserID:    userId,
+		DatasetID: datasetId,
 	}
 
-	userDatasetPerm := &models.UserDataset{UserID: userId, DatasetID: request.DatasetId}
-	return u.DB.Delete(userDatasetPerm).Error
+	if result := u.db.First(userDataset); result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return false, nil
+		}
+		return false, result.Error
+	}
+
+	return true, nil
 }

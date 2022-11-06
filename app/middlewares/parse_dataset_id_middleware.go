@@ -9,11 +9,12 @@ import (
 )
 
 const DatasetIdContextKey ContextKey = "dataset_id"
+const DatasetIdVarKey string = "datasetId"
 
 func ParseDatasetIdMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		datasetIdString := vars["datasetId"]
+		datasetIdString := vars[DatasetIdVarKey]
 		datasetId, err := strconv.Atoi(datasetIdString)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)

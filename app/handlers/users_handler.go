@@ -2,23 +2,16 @@ package handlers
 
 import (
 	"backend/app/models"
-	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
 )
 
-type PatchUserRoleRequest struct {
-	Role models.UserRole `json:"role" validate:"required"`
-}
-
 type UsersHandler struct {
-	DB        *gorm.DB
-	Validator *validator.Validate
+	DB *gorm.DB
 }
 
-func NewUsersHandler(db *gorm.DB, validator *validator.Validate) *UsersHandler {
+func NewUsersHandler(db *gorm.DB) *UsersHandler {
 	return &UsersHandler{
-		DB:        db,
-		Validator: validator,
+		DB: db,
 	}
 }
 
@@ -34,17 +27,9 @@ func (u *UsersHandler) GetUsersWithDatasets() []*models.User {
 	return users
 }
 
-func (u *UsersHandler) PatchUserRole(userId uint, request *PatchUserRoleRequest) (*models.User, error) {
-	if valErr := u.Validator.Struct(request); valErr != nil {
-		return nil, valErr.(validator.ValidationErrors)
-	}
-
-	if valErr := request.Role.IsValid(); valErr != nil {
-		return nil, valErr
-	}
-
+func (u *UsersHandler) PatchUserRole(userId uint, role models.UserRole) (*models.User, error) {
 	user := &models.User{}
-	if err := u.DB.First(user, userId).Update("role", request.Role).Error; err != nil {
+	if err := u.DB.First(user, userId).Update("role", role).Error; err != nil {
 		return nil, err
 	}
 

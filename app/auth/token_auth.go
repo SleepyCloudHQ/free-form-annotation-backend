@@ -1,9 +1,7 @@
 package auth
 
 import (
-	utils "backend/app/controllers/utils"
 	"backend/app/models"
-	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
@@ -13,14 +11,11 @@ import (
 	"gorm.io/gorm"
 )
 
-var TokenExpiredError = errors.New("token is expired")
+var ErrTokenExpired = errors.New("token is expired")
+var ErrInvalidToken = errors.New("invalid token provided")
 
 const AuthTokenCookieName = "auth_token"
 const RefreshTokenCookieName = "refresh_token"
-
-type ContextKey string
-
-const UserContextKey ContextKey = "user"
 
 type TokenAuth struct {
 	DB *gorm.DB
@@ -60,11 +55,14 @@ func (a *TokenAuth) CreateAuthToken(user *models.User) (*models.AuthToken, error
 func (a *TokenAuth) CheckAuthToken(token string) (*models.User, error) {
 	authToken := &models.AuthToken{}
 	if result := a.DB.Preload("User").First(authToken, "token = ?", token); result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, ErrInvalidToken
+		}
 		return nil, result.Error
 	}
 
 	if authToken.ExpiresAt.Before(time.Now()) {
-		return nil, TokenExpiredError
+		return nil, ErrTokenExpired
 	}
 
 	return &authToken.User, nil
@@ -77,36 +75,24 @@ func (a *TokenAuth) RefreshToken(token string) (*models.AuthToken, error) {
 	}
 
 	if refreshToken.ExpiresAt.Before(time.Now()) {
-		return nil, TokenExpiredError
+		return nil, ErrTokenExpired
 	}
 
 	authToken := &models.AuthToken{}
-	if authTokenResult := a.DB.Preload("User").First(&authToken, refreshToken.ID); authTokenResult.Error != nil {
+	if authTokenResult := a.DB.Preload("User").First(&authToken, refreshToken.AuthTokenID); authTokenResult.Error != nil {
 		return nil, authTokenResult.Error
 	}
 
+	// delete old auth and refersh tokens
+	if result := a.DB.Delete(authToken); result.Error != nil {
+		return nil, result.Error
+	}
+
+	if result := a.DB.Delete(refreshToken); result.Error != nil {
+		return nil, result.Error
+	}
+
 	return a.CreateAuthToken(&authToken.User)
-}
-
-func (a *TokenAuth) AuthTokenMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie(AuthTokenCookieName)
-		if err != nil {
-			w.WriteHeader(http.StatusUnauthorized)
-			utils.WriteError(errors.New("Unauthorized"), w)
-			return
-		}
-
-		user, authErr := a.CheckAuthToken(cookie.Value)
-		if authErr != nil {
-			w.WriteHeader(http.StatusUnauthorized)
-			utils.WriteError(errors.New("Unauthorized"), w)
-			return
-		}
-
-		ctx := context.WithValue(r.Context(), UserContextKey, user)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
 }
 
 func (a *TokenAuth) CreateAuthCookies(authToken *models.AuthToken) (*http.Cookie, *http.Cookie) {
