@@ -47,7 +47,7 @@ func setupDBForAdminControllerTests(t *testing.T) (*gorm.DB, func() error) {
 	return db, sqlDB.Close
 }
 
-func setup(t *testing.T) (*gorm.DB, func() error, *mux.Router) {
+func setupAdminController(t *testing.T) (*gorm.DB, func() error, *mux.Router) {
 	db, cleanup := setupDBForAdminControllerTests(t)
 	tokenAuth := auth.NewTokenAuth(db)
 	userHandler := handlers.NewUsersHandler(db)
@@ -60,7 +60,7 @@ func setup(t *testing.T) (*gorm.DB, func() error, *mux.Router) {
 }
 
 func TestGetUsersWithoutAuth(t *testing.T) {
-	_, cleanup, router := setup(t)
+	_, cleanup, router := setupAdminController(t)
 	defer cleanup()
 	is := is.New(t)
 
@@ -72,7 +72,7 @@ func TestGetUsersWithoutAuth(t *testing.T) {
 }
 
 func TestAdminGetUsers(t *testing.T) {
-	db, cleanup, router := setup(t)
+	db, cleanup, router := setupAdminController(t)
 	defer cleanup()
 	is := is.New(t)
 	tokenAuth := auth.NewTokenAuth(db)
@@ -100,7 +100,7 @@ func TestAdminGetUsers(t *testing.T) {
 }
 
 func TestAnnotatorGetUsers(t *testing.T) {
-	db, cleanup, router := setup(t)
+	db, cleanup, router := setupAdminController(t)
 	defer cleanup()
 	is := is.New(t)
 
@@ -121,7 +121,7 @@ func TestAnnotatorGetUsers(t *testing.T) {
 }
 
 func TestPatchRolesWithoutAuth(t *testing.T) {
-	db, cleanup, router := setup(t)
+	db, cleanup, router := setupAdminController(t)
 	defer cleanup()
 	is := is.New(t)
 
@@ -146,7 +146,7 @@ func TestPatchRolesWithoutAuth(t *testing.T) {
 }
 
 func TestPatchRolesNonExistingUser(t *testing.T) {
-	db, cleanup, router := setup(t)
+	db, cleanup, router := setupAdminController(t)
 	defer cleanup()
 	is := is.New(t)
 
@@ -173,7 +173,7 @@ func TestPatchRolesNonExistingUser(t *testing.T) {
 }
 
 func TestPatchRolesAsAdmin(t *testing.T) {
-	db, cleanup, router := setup(t)
+	db, cleanup, router := setupAdminController(t)
 	defer cleanup()
 	is := is.New(t)
 
@@ -205,7 +205,7 @@ func TestPatchRolesAsAdmin(t *testing.T) {
 }
 
 func TestPatchRolesAsAnnotator(t *testing.T) {
-	db, cleanup, router := setup(t)
+	db, cleanup, router := setupAdminController(t)
 	defer cleanup()
 	is := is.New(t)
 
@@ -233,7 +233,7 @@ func TestPatchRolesAsAnnotator(t *testing.T) {
 }
 
 func TestPatchRolesInvalidRequest(t *testing.T) {
-	db, cleanup, router := setup(t)
+	db, cleanup, router := setupAdminController(t)
 	defer cleanup()
 	is := is.New(t)
 
@@ -265,7 +265,7 @@ func TestPatchRolesInvalidRequest(t *testing.T) {
 }
 
 func TestPatchRolesInvalidRequestMissingRole(t *testing.T) {
-	db, cleanup, router := setup(t)
+	db, cleanup, router := setupAdminController(t)
 	defer cleanup()
 	is := is.New(t)
 
@@ -297,7 +297,7 @@ func TestPatchRolesInvalidRequestMissingRole(t *testing.T) {
 }
 
 func TestPostUserDatasetPermWithoutAuth(t *testing.T) {
-	db, cleanup, router := setup(t)
+	db, cleanup, router := setupAdminController(t)
 	defer cleanup()
 	is := is.New(t)
 
@@ -321,7 +321,7 @@ func TestPostUserDatasetPermWithoutAuth(t *testing.T) {
 }
 
 func TestPostUserDatasetPermAsAnnotator(t *testing.T) {
-	db, cleanup, router := setup(t)
+	db, cleanup, router := setupAdminController(t)
 	defer cleanup()
 	is := is.New(t)
 
@@ -350,7 +350,7 @@ func TestPostUserDatasetPermAsAnnotator(t *testing.T) {
 }
 
 func TestPostUserDatasetPermInvalidRequest(t *testing.T) {
-	db, cleanup, router := setup(t)
+	db, cleanup, router := setupAdminController(t)
 	defer cleanup()
 	is := is.New(t)
 
@@ -381,7 +381,7 @@ func TestPostUserDatasetPermInvalidRequest(t *testing.T) {
 }
 
 func TestPostUserDatasetPerm(t *testing.T) {
-	db, cleanup, router := setup(t)
+	db, cleanup, router := setupAdminController(t)
 	defer cleanup()
 	is := is.New(t)
 
@@ -410,7 +410,7 @@ func TestPostUserDatasetPerm(t *testing.T) {
 }
 
 func TestDeleteUserDatasetPermWithoutAuth(t *testing.T) {
-	db, cleanup, router := setup(t)
+	db, cleanup, router := setupAdminController(t)
 	defer cleanup()
 	is := is.New(t)
 
@@ -434,7 +434,7 @@ func TestDeleteUserDatasetPermWithoutAuth(t *testing.T) {
 }
 
 func TestDeleteUserDatasetPermAsAnnotator(t *testing.T) {
-	db, cleanup, router := setup(t)
+	db, cleanup, router := setupAdminController(t)
 	defer cleanup()
 	is := is.New(t)
 
@@ -463,7 +463,7 @@ func TestDeleteUserDatasetPermAsAnnotator(t *testing.T) {
 }
 
 func TestDeleteUserDatasetPermInvalidRequest(t *testing.T) {
-	db, cleanup, router := setup(t)
+	db, cleanup, router := setupAdminController(t)
 	defer cleanup()
 	is := is.New(t)
 
@@ -494,7 +494,7 @@ func TestDeleteUserDatasetPermInvalidRequest(t *testing.T) {
 }
 
 func TestDeleteNonExistentUserDatasetPerm(t *testing.T) {
-	db, cleanup, router := setup(t)
+	db, cleanup, router := setupAdminController(t)
 	defer cleanup()
 	is := is.New(t)
 
@@ -519,7 +519,7 @@ func TestDeleteNonExistentUserDatasetPerm(t *testing.T) {
 }
 
 func TestDeleteUserDatasetPerm(t *testing.T) {
-	db, cleanup, router := setup(t)
+	db, cleanup, router := setupAdminController(t)
 	defer cleanup()
 	is := is.New(t)
 

@@ -75,32 +75,32 @@ func (a *AuthController) login(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(user)
 }
 
-func (a *AuthController) register(w http.ResponseWriter, r *http.Request) {
-	registerRequest := &RegisterRequest{}
-	if err := json.NewDecoder(r.Body).Decode(registerRequest); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		utils.WriteError(err, w)
-		return
-	}
+// func (a *AuthController) register(w http.ResponseWriter, r *http.Request) {
+// 	registerRequest := &RegisterRequest{}
+// 	if err := json.NewDecoder(r.Body).Decode(registerRequest); err != nil {
+// 		w.WriteHeader(http.StatusBadRequest)
+// 		utils.WriteError(err, w)
+// 		return
+// 	}
 
-	if valErr := a.validator.Struct(registerRequest); valErr != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		utils.WriteError(valErr.(validator.ValidationErrors), w)
-		return
-	}
+// 	if valErr := a.validator.Struct(registerRequest); valErr != nil {
+// 		w.WriteHeader(http.StatusBadRequest)
+// 		utils.WriteError(valErr.(validator.ValidationErrors), w)
+// 		return
+// 	}
 
-	user, authCookies, registerErr := a.authHandler.Register(registerRequest.Email, registerRequest.Password)
-	if registerErr != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		utils.WriteError(registerErr, w)
-		return
-	}
+// 	user, authCookies, registerErr := a.authHandler.Register(registerRequest.Email, registerRequest.Password)
+// 	if registerErr != nil {
+// 		w.WriteHeader(http.StatusBadRequest)
+// 		utils.WriteError(registerErr, w)
+// 		return
+// 	}
 
-	http.SetCookie(w, authCookies.AuthTokenCookie)
-	http.SetCookie(w, authCookies.RefreshTokenCookie)
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(user)
-}
+// 	http.SetCookie(w, authCookies.AuthTokenCookie)
+// 	http.SetCookie(w, authCookies.RefreshTokenCookie)
+// 	w.WriteHeader(http.StatusOK)
+// 	json.NewEncoder(w).Encode(user)
+// }
 
 func (a *AuthController) logout(w http.ResponseWriter, r *http.Request) {
 	loggedOutAuthTokenCookie, loggedOutRefreshTokenCookie := a.tokenAuth.CreateLogoutCookies()
@@ -120,6 +120,7 @@ func (a *AuthController) refreshToken(w http.ResponseWriter, r *http.Request) {
 
 	authCookies, loginErr := a.authHandler.RefreshToken(cookie.Value)
 	if loginErr != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		log.Panic(loginErr)
 		return
 	}
