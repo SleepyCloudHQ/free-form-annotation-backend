@@ -1,0 +1,13 @@
+name: pull-request-pipeline
+on: 
+  pull_request:
+    branches:
+      - master
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run Unit Tests
+        run: go test ./...
+
