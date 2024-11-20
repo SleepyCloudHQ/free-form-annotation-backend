@@ -1,7 +1,7 @@
 # Free form annotation backend
 
 ## Full app demo
-The full app demo can be found [here](https://ffat-promo.herokuapp.com/demo).
+The full app demo can be found [here](https://free-form-annotation-promo-website.onrender.com/).
 
 ## Build
 To build the image navigate to the project directory and run:
